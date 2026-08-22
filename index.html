@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EduValida POC</title>
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <header>
+    <h1>EduValida POC</h1>
+    <div class="role-selector">
+      <label for="role">Papel:</label>
+      <select id="role">
+        <option value="institution">Instituição</option>
+        <option value="student">Aluno</option>
+      </select>
+      <span id="wallet-info"></span>
+      <button id="copy-wallet" class="copy-btn" title="Copiar endereço">⧉</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Institution View -->
+    <section id="institution-view" class="view">
+      <h2>Instituição</h2>
+
+      <div class="card">
+        <h3>Criar Skill</h3>
+        <form id="create-skill-form">
+          <label>Nome da skill</label>
+          <input type="text" id="new-skill-name" placeholder="ex: Solidity Basics" required />
+          <button type="submit">Criar</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>Emitir Skill para Aluno</h3>
+        <form id="issue-skill-form">
+          <label>Endereço do aluno <button type="button" class="copy-btn inline" data-copy="student-address" title="Copiar endereço do aluno">⧉</button></label>
+          <input type="text" id="skill-student-addr" placeholder="0x..." required />
+          <label>Selecione a skill</label>
+          <select id="skill-select" required>
+            <option value="">Nenhuma skill criada</option>
+          </select>
+          <button type="submit">Emitir</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Criar Tipo de Certificado</h3>
+          <button type="button" id="refresh-cert-skills" class="refresh-btn" title="Atualizar skills">&#x21bb;</button>
+        </div>
+        <form id="create-cert-form">
+          <label>Nome do certificado</label>
+          <input type="text" id="cert-name" placeholder="ex: Blockchain Developer" required />
+          <label>Skills exigidas</label>
+          <div id="cert-skills-select" class="skills-checkboxes">
+            <em>Nenhuma skill conhecida. Emita uma skill primeiro.</em>
+          </div>
+          <button type="submit">Criar</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Tipos de Certificado Criados</h3>
+          <button type="button" id="refresh-inst-certs" class="refresh-btn" title="Atualizar">&#x21bb;</button>
+        </div>
+        <div id="inst-cert-types-list"></div>
+      </div>
+
+      <div class="card">
+        <h3>Revogar Certificado</h3>
+        <form id="revoke-cert-form">
+          <label>Endereco do aluno</label>
+          <input type="text" id="revoke-student-addr" placeholder="0x..." required />
+          <label>Tipo de certificado</label>
+          <select id="revoke-cert-select" required>
+            <option value="">Nenhum certificado</option>
+          </select>
+          <button type="submit">Revogar</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- Student View -->
+    <section id="student-view" class="view" style="display:none">
+      <h2>Aluno</h2>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Skills</h3>
+          <button type="button" id="refresh-skills" class="refresh-btn" title="Atualizar">&#x21bb;</button>
+        </div>
+        <div id="all-skills-list"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Certificados Disponíveis</h3>
+          <button type="button" id="refresh-cert-types" class="refresh-btn" title="Atualizar">&#x21bb;</button>
+        </div>
+        <div id="cert-types-list"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Certificados Reivindicados</h3>
+          <button type="button" id="refresh-claimed" class="refresh-btn" title="Atualizar">&#x21bb;</button>
+        </div>
+        <div id="claimed-certs-list"></div>
+      </div>
+    </section>
+  </main>
+
+  <aside id="log-panel">
+    <h3>Log de Transações</h3>
+    <div id="log-entries"></div>
+  </aside>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

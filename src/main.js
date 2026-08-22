@@ -1,0 +1,564 @@
+import { ethers } from "ethers";
+import deployedAddresses from "../deployed-addresses.json";
+
+const RPC_URL = "http://localhost:8545";
+const DEPLOYER_KEY = "0x8f2a55949038a9610f50fb23b5883af3b4ecb3c3bb792cbcefbd1542c692be63";
+const INSTITUTION_KEY = "0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3";
+const STUDENT_KEY = "0xae6ae8e5ccbfb04590405997ee2d52d2b330726137b875053c36d94e974d162f";
+
+const SKILL_TOKEN_ABI = [
+  "function authorizedIssuers(address) view returns (bool)",
+  "function skillNames(bytes32) view returns (string)",
+  "function skillId(bytes32 skillType, address institution) pure returns (uint256)",
+  "function createSkill(string name) returns (bytes32)",
+  "function issueSkill(address to, bytes32 skillType) returns (uint256)",
+  "function hasSkill(address holder, bytes32 skillType) view returns (bool)",
+  "function setIssuer(address institution, bool status)",
+  "function getKnownSkillTypes() view returns (bytes32[])",
+  "event SkillCreated(bytes32 indexed skillType, string name)",
+  "event SkillIssued(address indexed institution, address indexed to, bytes32 indexed skillType, uint256 id)",
+];
+
+const CERT_EMITTER_ABI = [
+  "function certificateTypes(uint256) view returns (string name, bool exists)",
+  "function getRequiredSkills(uint256 certTypeId) view returns (bytes32[])",
+  "function missingSkills(address student, uint256 certTypeId) view returns (bytes32[])",
+  "function claimCertificate(uint256 certTypeId) returns (uint256)",
+  "function createCertificateType(string name, bytes32[] requiredSkills) returns (uint256)",
+  "function owner() view returns (address)",
+  "function nextCertTypeId() view returns (uint256)",
+  "function getCertTypeIds() view returns (uint256[])",
+  "function hasClaimed(address student, uint256 certTypeId) view returns (bool)",
+  "function studentTokenId(address student, uint256 certTypeId) view returns (uint256)",
+  "function revokeCertificate(uint256 tokenId)",
+  "function deleteCertificateType(uint256 certTypeId)",
+  "event CertificateTypeCreated(uint256 indexed certTypeId, string name)",
+  "event CertificateClaimed(address indexed student, uint256 indexed certTypeId, uint256 tokenId)",
+];
+
+const provider = new ethers.JsonRpcProvider(RPC_URL);
+
+const wallets = {
+  deployer: new ethers.Wallet(DEPLOYER_KEY, provider),
+  institution: new ethers.Wallet(INSTITUTION_KEY, provider),
+  student: new ethers.Wallet(STUDENT_KEY, provider),
+};
+
+const skillToken = new ethers.Contract(deployedAddresses.skillToken, SKILL_TOKEN_ABI, provider);
+const certEmitter = new ethers.Contract(deployedAddresses.certificateEmitter, CERT_EMITTER_ABI, provider);
+
+let currentRole = "institution";
+const knownSkills = new Map();
+const knownCertTypes = new Map();
+
+function log(msg, type = "info") {
+  const el = document.getElementById("log-entries");
+  const entry = document.createElement("div");
+  entry.className = `log-entry ${type}`;
+  entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+  el.prepend(entry);
+}
+
+function toBytes32(text) {
+  return ethers.id(text);
+}
+
+function shortAddr(addr) {
+  return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+}
+
+async function copyToClipboard(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+    return true;
+  }
+}
+
+function flashCopied(btn) {
+  btn.classList.add("copied");
+  btn.textContent = "✓";
+  setTimeout(() => {
+    btn.classList.remove("copied");
+    btn.textContent = "⧉";
+  }, 1200);
+}
+
+function updateWalletInfo() {
+  const wallet = wallets[currentRole];
+  const fullAddr = wallet.address;
+  document.getElementById("wallet-info").textContent = `${shortAddr(fullAddr)} (${currentRole})`;
+  document.getElementById("copy-wallet").onclick = async () => {
+    await copyToClipboard(fullAddr);
+    flashCopied(document.getElementById("copy-wallet"));
+  };
+}
+
+function switchView(role) {
+  currentRole = role;
+  document.getElementById("institution-view").style.display = role === "institution" ? "block" : "none";
+  document.getElementById("student-view").style.display = role === "student" ? "block" : "none";
+  updateWalletInfo();
+  if (role === "institution") {
+    renderSkillCheckboxes();
+    renderSkillSelect();
+    renderInstCertTypes();
+    renderRevokeCertSelect();
+  } else {
+    refreshSkills();
+    refreshCertTypes();
+    refreshClaimedCerts();
+  }
+}
+
+function renderSkillCheckboxes() {
+  const container = document.getElementById("cert-skills-select");
+  if (knownSkills.size === 0) {
+    container.innerHTML = "<em>Nenhuma skill conhecida. Crie uma skill primeiro.</em>";
+    return;
+  }
+  let html = "";
+  for (const [hash, name] of knownSkills) {
+    html += `<label><input type="checkbox" value="${hash}" /> ${name}</label>`;
+  }
+  container.innerHTML = html;
+}
+
+function renderSkillSelect() {
+  const select = document.getElementById("skill-select");
+  const current = select.value;
+  select.innerHTML = '<option value="">Selecione...</option>';
+  for (const [hash, name] of knownSkills) {
+    const opt = document.createElement("option");
+    opt.value = hash;
+    opt.textContent = name;
+    select.appendChild(opt);
+  }
+  if (current) select.value = current;
+}
+
+function renderInstCertTypes() {
+  const container = document.getElementById("inst-cert-types-list");
+  if (knownCertTypes.size === 0) {
+    container.innerHTML = "<em>Nenhum tipo de certificado criado ainda.</em>";
+    return;
+  }
+  let html = "";
+  for (const [id, info] of knownCertTypes) {
+    html += `<div class="cert-item">`;
+    html += `<div class="cert-name">${info.name} (id: ${id})</div>`;
+    html += `<div class="cert-status">Skills: ${info.skills.join(", ")}</div>`;
+    html += `<button onclick="deleteCertType(${id})" style="margin-top:0.4rem;font-size:0.75rem;background:#555">Excluir</button>`;
+    html += `</div>`;
+  }
+  container.innerHTML = html;
+}
+
+async function deleteCertType(certTypeId) {
+  const signer = wallets.institution;
+  const contract = certEmitter.connect(signer);
+
+  log(`Excluindo tipo de certificado id=${certTypeId}...`);
+
+  try {
+    const tx = await contract.deleteCertificateType(certTypeId);
+    log(`TX enviada: ${tx.hash}`, "info");
+    await tx.wait();
+
+    knownCertTypes.delete(certTypeId);
+    log(`Tipo de certificado excluido!`, "success");
+    renderInstCertTypes();
+    renderRevokeCertSelect();
+  } catch (err) {
+    log(`Erro: ${err.reason || err.message}`, "error");
+  }
+}
+
+window.deleteCertType = deleteCertType;
+
+async function createSkill(e) {
+  e.preventDefault();
+  const name = document.getElementById("new-skill-name").value.trim();
+  if (!name) return;
+
+  const signer = wallets.deployer;
+  const contract = skillToken.connect(signer);
+
+  log(`Criando skill "${name}"...`);
+
+  try {
+    const tx = await contract.createSkill(name);
+    log(`TX enviada: ${tx.hash}`, "info");
+    const receipt = await tx.wait();
+
+    for (const logItem of receipt.logs) {
+      try {
+        const parsed = skillToken.interface.parseLog(logItem);
+        if (parsed.name === "SkillCreated") {
+          knownSkills.set(parsed.args.skillType, parsed.args.name);
+          log(`SkillCreated: ${parsed.args.name}`, "success");
+        }
+      } catch {}
+    }
+
+    log(`Skill "${name}" criada!`, "success");
+    renderSkillCheckboxes();
+    renderSkillSelect();
+    e.target.reset();
+  } catch (err) {
+    log(`Erro: ${err.reason || err.message}`, "error");
+  }
+}
+
+async function IssueSkill(e) {
+  e.preventDefault();
+  const studentAddr = document.getElementById("skill-student-addr").value.trim();
+  const skillType = document.getElementById("skill-select").value;
+  if (!studentAddr || !skillType) return;
+
+  const skillName = knownSkills.get(skillType) || skillType;
+  const signer = wallets.institution;
+  const contract = skillToken.connect(signer);
+
+  log(`Emitindo skill "${skillName}" para ${shortAddr(studentAddr)}...`);
+
+  try {
+    const tx = await contract.issueSkill(studentAddr, skillType);
+    log(`TX enviada: ${tx.hash}`, "info");
+    const receipt = await tx.wait();
+
+    for (const logItem of receipt.logs) {
+      try {
+        const parsed = skillToken.interface.parseLog(logItem);
+        if (parsed.name === "SkillIssued") {
+          log(`SkillIssued: id=${parsed.args.id}`, "success");
+        }
+      } catch {}
+    }
+
+    log(`Skill "${skillName}" emitida com sucesso!`, "success");
+    e.target.reset();
+  } catch (err) {
+    log(`Erro: ${err.reason || err.message}`, "error");
+  }
+}
+
+async function createCertType(e) {
+  e.preventDefault();
+  const certName = document.getElementById("cert-name").value.trim();
+  if (!certName) return;
+
+  const checked = document.querySelectorAll("#cert-skills-select input[type='checkbox']:checked");
+  const skillTypes = Array.from(checked).map((cb) => cb.value);
+  if (skillTypes.length === 0) {
+    log("Selecione ao menos uma skill.", "error");
+    return;
+  }
+
+  const signer = wallets.institution;
+  const contract = certEmitter.connect(signer);
+
+  log(`Criando tipo de certificado "${certName}" com ${skillTypes.length} skill(s)...`);
+
+  try {
+    const tx = await contract.createCertificateType(certName, skillTypes);
+    log(`TX enviada: ${tx.hash}`, "info");
+    const receipt = await tx.wait();
+
+    const skillNames = skillTypes.map((h) => knownSkills.get(h) || h);
+    for (const logItem of receipt.logs) {
+      try {
+        const parsed = certEmitter.interface.parseLog(logItem);
+        if (parsed.name === "CertificateTypeCreated") {
+          const certTypeId = parsed.args.certTypeId;
+          knownCertTypes.set(Number(certTypeId), { name: certName, skills: skillNames });
+          log(`CertificateTypeCreated: id=${certTypeId}`, "success");
+        }
+      } catch {}
+    }
+
+    log(`Certificado "${certName}" criado!`, "success");
+    e.target.reset();
+    renderSkillCheckboxes();
+    renderInstCertTypes();
+  } catch (err) {
+    log(`Erro: ${err.reason || err.message}`, "error");
+  }
+}
+
+async function refreshSkills() {
+  const container = document.getElementById("all-skills-list");
+
+  if (knownSkills.size === 0) {
+    container.innerHTML = "<em>Nenhuma skill conhecida no sistema.</em>";
+    return;
+  }
+
+  container.innerHTML = "";
+  const signer = wallets.student;
+  const contract = skillToken.connect(signer);
+
+  for (const [hash, name] of knownSkills) {
+    const item = document.createElement("div");
+    item.className = "skill-item";
+
+    try {
+      const has = await contract.hasSkill(signer.address, hash);
+      if (has) {
+        item.classList.add("obtained");
+        item.innerHTML = `<span class="skill-name">${name}</span><span class="badge obtained">Obtida</span>`;
+      } else {
+        item.classList.add("pending");
+        item.innerHTML = `<span class="skill-name">${name}</span><span class="badge available">Faltante</span>`;
+      }
+    } catch {
+      item.classList.add("pending");
+      item.innerHTML = `<span class="skill-name">${name}</span><span class="badge available">Erro</span>`;
+    }
+
+    container.appendChild(item);
+  }
+}
+
+async function refreshCertTypes() {
+  const container = document.getElementById("cert-types-list");
+  container.innerHTML = "<em>Carregando certificados...</em>";
+
+  if (knownCertTypes.size === 0) {
+    container.innerHTML = "<em>Nenhum tipo de certificado conhecido. Crie um como instituição primeiro.</em>";
+    return;
+  }
+
+  const signer = wallets.student;
+  const skillContract = skillToken.connect(signer);
+  const certContract = certEmitter.connect(signer);
+
+  let html = "";
+  for (const [id, info] of knownCertTypes) {
+    try {
+      const claimed = await certContract.hasClaimed(signer.address, id);
+      if (claimed) continue;
+
+      const requiredHashes = await certContract.getRequiredSkills(id);
+      let obtained = 0;
+      const total = requiredHashes.length;
+      for (const hash of requiredHashes) {
+        try {
+          if (await skillContract.hasSkill(signer.address, hash)) obtained++;
+        } catch {}
+      }
+
+      const missing = await certContract.missingSkills(signer.address, id);
+      const complete = missing.length === 0;
+      const pct = total > 0 ? Math.round((obtained / total) * 100) : 0;
+
+      html += `<div class="cert-item">`;
+      html += `<div class="cert-name">${info.name} (id: ${id})</div>`;
+      html += `<div class="cert-status">${obtained} de ${total} skills</div>`;
+
+      if (complete) {
+        html += `<div class="cert-status complete">Todos os requisitos cumpridos!</div>`;
+      } else {
+        const missingNames = missing.map((h) => knownSkills.get(h) || h.slice(0, 10) + "...");
+        html += `<div class="missing-list">`;
+        for (const n of missingNames) html += `<span>${n}</span>`;
+        html += `</div>`;
+      }
+
+      html += `<button onclick="claimCert(${id})">Reivindicar</button>`;
+      html += `</div>`;
+    } catch (err) {
+      html += `<div class="cert-item"><div class="cert-name">${info.name}</div><div class="cert-status">Erro ao verificar</div></div>`;
+    }
+  }
+
+  container.innerHTML = html || "<em>Nenhum certificado encontrado.</em>";
+}
+
+async function claimCert(certTypeId) {
+  const signer = wallets.student;
+  const contract = certEmitter.connect(signer);
+
+  log(`Reivindicando certificado id=${certTypeId}...`);
+
+  try {
+    const tx = await contract.claimCertificate(certTypeId);
+    log(`TX enviada: ${tx.hash}`, "info");
+    const receipt = await tx.wait();
+
+    for (const logItem of receipt.logs) {
+      try {
+        const parsed = certEmitter.interface.parseLog(logItem);
+        if (parsed.name === "CertificateClaimed") {
+          log(`CertificateClaimed: tokenId=${parsed.args.tokenId}`, "success");
+        }
+      } catch {}
+    }
+
+    log(`Certificado reivindicado com sucesso!`, "success");
+    refreshCertTypes();
+    refreshClaimedCerts();
+  } catch (err) {
+    log(`Erro: ${err.reason || err.message}`, "error");
+  }
+}
+
+window.claimCert = claimCert;
+
+async function refreshClaimedCerts() {
+  const container = document.getElementById("claimed-certs-list");
+  container.innerHTML = "<em>Verificando...</em>";
+
+  if (knownCertTypes.size === 0) {
+    container.innerHTML = "<em>Nenhum certificado criado ainda.</em>";
+    return;
+  }
+
+  const signer = wallets.student;
+  const contract = certEmitter.connect(signer);
+  let html = "";
+  let found = false;
+
+  for (const [id, info] of knownCertTypes) {
+    try {
+      const claimed = await contract.hasClaimed(signer.address, id);
+      if (claimed) {
+        found = true;
+        html += `<div class="cert-item claimed">`;
+        html += `<div class="cert-name">${info.name}</div>`;
+        html += `<div class="cert-status complete">Reivindicado</div>`;
+        html += `</div>`;
+      }
+    } catch {
+      // skip
+    }
+  }
+
+  container.innerHTML = found ? html : "<em>Nenhum certificado reivindicado ainda.</em>";
+}
+
+function renderRevokeCertSelect() {
+  const select = document.getElementById("revoke-cert-select");
+  select.innerHTML = '<option value="">Selecione...</option>';
+  for (const [id, info] of knownCertTypes) {
+    const opt = document.createElement("option");
+    opt.value = id;
+    opt.textContent = `${info.name} (id: ${id})`;
+    select.appendChild(opt);
+  }
+}
+
+async function revokeCert(e) {
+  e.preventDefault();
+  const studentAddr = document.getElementById("revoke-student-addr").value.trim();
+  const certTypeId = document.getElementById("revoke-cert-select").value;
+  if (!studentAddr || !certTypeId) return;
+
+  const signer = wallets.institution;
+  const contract = certEmitter.connect(signer);
+
+  try {
+    const tokenId = await contract.studentTokenId(studentAddr, Number(certTypeId));
+    if (tokenId === 0n) {
+      log("Aluno nao possui esse certificado.", "error");
+      return;
+    }
+
+    log(`Revogando certificado tokenId=${tokenId} do aluno ${shortAddr(studentAddr)}...`);
+
+    const tx = await contract.revokeCertificate(tokenId);
+    log(`TX enviada: ${tx.hash}`, "info");
+    await tx.wait();
+
+    log(`Certificado revogado com sucesso!`, "success");
+    e.target.reset();
+  } catch (err) {
+    log(`Erro: ${err.reason || err.message}`, "error");
+  }
+}
+
+async function loadFromChain() {
+  try {
+    const skillTypes = await skillToken.getKnownSkillTypes();
+    for (const hash of skillTypes) {
+      if (!knownSkills.has(hash)) {
+        try {
+          const name = await skillToken.skillNames(hash);
+          knownSkills.set(hash, name || hash);
+        } catch {
+          knownSkills.set(hash, hash);
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Erro ao carregar skills:", err);
+  }
+
+  try {
+    const ids = await certEmitter.getCertTypeIds();
+    for (const bigId of ids) {
+      const certTypeId = Number(bigId);
+      if (!knownCertTypes.has(certTypeId)) {
+        try {
+          const cert = await certEmitter.certificateTypes(certTypeId);
+          if (cert.exists) {
+            const requiredSkills = await certEmitter.getRequiredSkills(certTypeId);
+            const skillNames = [];
+            for (const hash of requiredSkills) {
+              skillNames.push(knownSkills.get(hash) || hash);
+            }
+            knownCertTypes.set(certTypeId, { name: cert.name, skills: skillNames });
+          }
+        } catch (err) {
+          console.error(`Erro ao carregar cert tipo ${certTypeId}:`, err);
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Erro ao carregar certificados:", err);
+  }
+}
+
+document.getElementById("role").addEventListener("change", (e) => {
+  switchView(e.target.value);
+});
+
+document.getElementById("create-skill-form").addEventListener("submit", createSkill);
+document.getElementById("issue-skill-form").addEventListener("submit", IssueSkill);
+document.getElementById("create-cert-form").addEventListener("submit", createCertType);
+document.getElementById("refresh-skills").addEventListener("click", refreshSkills);
+document.getElementById("refresh-cert-skills").addEventListener("click", renderSkillCheckboxes);
+document.getElementById("refresh-inst-certs").addEventListener("click", async () => {
+  knownCertTypes.clear();
+  await loadFromChain();
+  renderInstCertTypes();
+  renderRevokeCertSelect();
+});
+document.getElementById("revoke-cert-form").addEventListener("submit", revokeCert);
+document.getElementById("refresh-cert-types").addEventListener("click", refreshCertTypes);
+document.getElementById("refresh-claimed").addEventListener("click", refreshClaimedCerts);
+
+document.querySelector('[data-copy="student-address"]').addEventListener("click", async (e) => {
+  e.preventDefault();
+  await copyToClipboard(wallets.student.address);
+  flashCopied(e.currentTarget);
+});
+
+updateWalletInfo();
+log("Conectado à rede Besu local via " + RPC_URL, "info");
+
+loadFromChain().then(() => {
+  renderSkillCheckboxes();
+  renderSkillSelect();
+  renderInstCertTypes();
+  renderRevokeCertSelect();
+  refreshClaimedCerts();
+  log(`Estado carregado: ${knownSkills.size} skill(s), ${knownCertTypes.size} certificado(s)`, "info");
+});
