@@ -12,7 +12,8 @@
     <div class="role-selector">
       <label for="role">Papel:</label>
       <select id="role">
-        <option value="institution">Instituição</option>
+        <option value="institution">Instituição 1</option>
+        <option value="institution2">Instituição 2</option>
         <option value="student">Aluno</option>
       </select>
       <span id="wallet-info"></span>
@@ -31,6 +32,15 @@
           <label>Nome da skill</label>
           <input type="text" id="new-skill-name" placeholder="ex: Solidity Basics" required />
           <button type="submit">Criar</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>Configurar Threshold de Skills</h3>
+        <form id="set-threshold-form">
+          <label>Mínimo de assinaturas por skill (atual: <span id="current-threshold">1</span>)</label>
+          <input type="number" id="skill-threshold-input" min="1" placeholder="1" required />
+          <button type="submit">Salvar</button>
         </form>
       </div>
 
@@ -72,6 +82,21 @@
       </div>
 
       <div class="card">
+        <h3>Configurar Signatários do Certificado</h3>
+        <form id="set-signers-form">
+          <label>Tipo de certificado</label>
+          <select id="signers-cert-select" required>
+            <option value="">Nenhum certificado</option>
+          </select>
+          <label>Signatários obrigatórios</label>
+          <div id="signers-checkboxes" class="skills-checkboxes">
+            <em>Crie um tipo de certificado primeiro.</em>
+          </div>
+          <button type="submit">Salvar</button>
+        </form>
+      </div>
+
+      <div class="card">
         <h3>Revogar Certificado</h3>
         <form id="revoke-cert-form">
           <label>Endereco do aluno</label>
@@ -81,6 +106,32 @@
             <option value="">Nenhum certificado</option>
           </select>
           <button type="submit">Revogar</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>Vincular Open Badge — Skill</h3>
+        <form id="set-skill-badge-form">
+          <label>Selecione a skill</label>
+          <select id="badge-skill-select" required>
+            <option value="">Nenhuma skill criada</option>
+          </select>
+          <label>URI do Open Badge</label>
+          <input type="text" id="skill-badge-uri" placeholder="https://ipfs.io/ipfs/..." required />
+          <button type="submit">Vincular</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>Vincular Open Badge — Certificado</h3>
+        <form id="set-cert-badge-form">
+          <label>Selecione o tipo de certificado</label>
+          <select id="badge-cert-select" required>
+            <option value="">Nenhum certificado</option>
+          </select>
+          <label>URI do Open Badge</label>
+          <input type="text" id="cert-badge-uri" placeholder="https://ipfs.io/ipfs/..." required />
+          <button type="submit">Vincular</button>
         </form>
       </div>
     </section>

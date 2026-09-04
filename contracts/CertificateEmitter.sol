@@ -20,12 +20,9 @@ interface IERC5484 {
  *         emitido quando o aluno já possui, em saldo ERC-1155 (SkillToken), todas
  *         as skills exigidas. Revogável apenas pelo emissor.
  *
- *         Simplificações assumidas (a substituir numa v2):
- *          - Sem verificação de trust/escopo por skill: qualquer saldo válido no
- *            contrato de origem é aceito.
- *          - Emissão/revogação controladas por um único owner, sem multi-assinatura
- *            institucional (a evoluir para quórum, como discutido para o certificado
- *            final na arquitetura completa).
+ *         Multi-assinatura: `requiredSigners` define quais instituições devem
+ *         ter emitido as skills exigidas para que o certificado possa ser
+ *         reivindicado.
  */
 contract CertificateEmitter is ERC721, IERC5484, Ownable {
     SkillToken public immutable skillToken;
@@ -37,15 +34,19 @@ contract CertificateEmitter is ERC721, IERC5484, Ownable {
     }
 
     mapping(uint256 => CertificateType) public certificateTypes;
+    mapping(uint256 => string) public certificateBadgeURI;
     mapping(address => mapping(uint256 => bool)) public hasClaimed;
     mapping(address => mapping(uint256 => uint256)) public studentTokenId;
     mapping(uint256 => uint256) private _tokenToCertType;
+    mapping(uint256 => address[]) private _requiredSigners;
     uint256 private _nextCertTypeId;
     uint256 private _nextTokenId;
 
     event CertificateTypeCreated(uint256 indexed certTypeId, string name);
     event CertificateClaimed(address indexed student, uint256 indexed certTypeId, uint256 tokenId);
     event CertificateRevoked(address indexed student, uint256 indexed certTypeId, uint256 tokenId);
+    event CertificateBadgeURISet(uint256 indexed certTypeId, string uri);
+    event RequiredSignersSet(uint256 indexed certTypeId, address[] signers);
 
     constructor(address skillTokenAddress) ERC721("Certificado", "CERT") Ownable(msg.sender) {
         skillToken = SkillToken(skillTokenAddress);
@@ -69,18 +70,92 @@ contract CertificateEmitter is ERC721, IERC5484, Ownable {
         emit CertificateTypeCreated(certTypeId, name);
     }
 
-    /// @notice Aluno reivindica o certificado se ja possuir todas as skills exigidas.
+    /// @notice Define quais instituições devem assinar (emitir skills) para um certificado.
+    function setRequiredSigners(uint256 certTypeId, address[] calldata signers) external onlyOwner {
+        require(certificateTypes[certTypeId].exists, "CertificateEmitter: tipo de certificado inexistente");
+        _requiredSigners[certTypeId] = signers;
+        emit RequiredSignersSet(certTypeId, signers);
+    }
+
+    /// @notice Retorna a lista de signatários exigidos para um certificado.
+    function getRequiredSigners(uint256 certTypeId) external view returns (address[] memory) {
+        return _requiredSigners[certTypeId];
+    }
+
+    /// @notice Verifica se todos os signatários emitiram todas as skills exigidas para o student.
+    function allSignersSigned(address student, uint256 certTypeId) public view returns (bool) {
+        CertificateType memory cert = certificateTypes[certTypeId];
+        address[] memory signers = _requiredSigners[certTypeId];
+
+        if (signers.length == 0) return true; // sem signatários exigidos, libera
+
+        for (uint256 i = 0; i < signers.length; i++) {
+            for (uint256 j = 0; j < cert.requiredSkills.length; j++) {
+                if (!skillToken.hasSkillFrom(signers[i], student, cert.requiredSkills[j])) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /// @notice Retorna os signatários que ainda NÃO emitiram todas as skills exigidas.
+    function missingSigners(address student, uint256 certTypeId)
+        external
+        view
+        returns (address[] memory missing)
+    {
+        CertificateType memory cert = certificateTypes[certTypeId];
+        address[] memory signers = _requiredSigners[certTypeId];
+
+        if (signers.length == 0) return new address[](0);
+
+        address[] memory temp = new address[](signers.length);
+        uint256 count;
+
+        for (uint256 i = 0; i < signers.length; i++) {
+            bool signed = true;
+            for (uint256 j = 0; j < cert.requiredSkills.length; j++) {
+                if (!skillToken.hasSkillFrom(signers[i], student, cert.requiredSkills[j])) {
+                    signed = false;
+                    break;
+                }
+            }
+            if (!signed) {
+                temp[count++] = signers[i];
+            }
+        }
+
+        missing = new address[](count);
+        for (uint256 i = 0; i < count; i++) {
+            missing[i] = temp[i];
+        }
+    }
+
+    /// @notice Define a URI do Open Badge associada a um tipo de certificado.
+    function setCertificateBadgeURI(uint256 certTypeId, string calldata uri) external onlyOwner {
+        require(certificateTypes[certTypeId].exists, "CertificateEmitter: tipo de certificado inexistente");
+        certificateBadgeURI[certTypeId] = uri;
+        emit CertificateBadgeURISet(certTypeId, uri);
+    }
+
+    /// @notice Aluno reivindica o certificado se ja possuir todas as skills exigidas
+    ///         e todos os signatários tiverem assinado.
     function claimCertificate(uint256 certTypeId) external returns (uint256 tokenId) {
         CertificateType memory cert = certificateTypes[certTypeId];
         require(cert.exists, "CertificateEmitter: tipo de certificado inexistente");
         require(!hasClaimed[msg.sender][certTypeId], "CertificateEmitter: certificado ja reivindicado");
 
+        // verifica skills (threshold de assinaturas)
         for (uint256 i = 0; i < cert.requiredSkills.length; i++) {
             require(
                 skillToken.hasSkill(msg.sender, cert.requiredSkills[i]),
                 "CertificateEmitter: requisito de skill nao cumprido"
             );
         }
+
+        // verifica signatários obrigatórios
+        require(allSignersSigned(msg.sender, certTypeId), "CertificateEmitter: signatarios pendentes");
 
         tokenId = ++_nextTokenId;
         _safeMint(msg.sender, tokenId);
@@ -93,8 +168,6 @@ contract CertificateEmitter is ERC721, IERC5484, Ownable {
     }
 
     /// @notice Skills exigidas por um tipo de certificado.
-    /// O getter automático do mapping `certificateTypes` omite membros array
-    /// (limitação do compilador), então este accessor expõe a lista completa.
     function getRequiredSkills(uint256 certTypeId)
         external
         view

@@ -13,13 +13,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  *         emissor mesmo quando duas instituições atestam a mesma competência
  *         para o mesmo aluno.
  *
- *         Simplificações assumidas nesta versão (a substituir por um time
- *         especializado numa v2):
- *          - `authorizedIssuers` faz o papel do TrustRegistry, controlado pelo
- *            owner do contrato em vez de aprovação por quórum de instituições.
- *          - Não existe SkillTaxonomyRegistry: `skillType` é um bytes32 livre
- *            (ex: keccak256("CRIPTOGRAFIA_BASICA")), sem validação de vocabulário
- *            nem hierarquia entre skills.
+ *         Multi-assinatura: `skillThreshold` define quantas instituições
+ *         diferentes precisam emitir uma skill para que o aluno seja
+ *         considerado como a tendo obtido.
  */
 contract SkillToken is ERC1155, Ownable {
     mapping(address => bool) public authorizedIssuers;
@@ -28,17 +24,28 @@ contract SkillToken is ERC1155, Ownable {
     bytes32[] private _knownSkillTypes;
 
     mapping(bytes32 => string) public skillNames;
-    mapping(uint256 => bytes32) public idToSkillType; // lookup reverso, útil pra UI/debug
+    mapping(bytes32 => string) public skillBadgeURI;
+    mapping(uint256 => bytes32) public idToSkillType;
     mapping(uint256 => address) public idToIssuer;
+
+    uint256 public skillThreshold = 1;
 
     event SkillCreated(bytes32 indexed skillType, string name);
     event SkillIssued(address indexed institution, address indexed to, bytes32 indexed skillType, uint256 id);
     event SkillRevoked(address indexed institution, address indexed from, bytes32 indexed skillType, uint256 id);
+    event SkillBadgeURISet(bytes32 indexed skillType, string uri);
+    event SkillThresholdUpdated(uint256 newThreshold);
 
     constructor() ERC1155("") Ownable(msg.sender) {}
 
+    /// @notice Define o número mínimo de instituições que devem atestar uma skill.
+    function setSkillThreshold(uint256 _threshold) external onlyOwner {
+        require(_threshold > 0, "SkillToken: threshold deve ser > 0");
+        skillThreshold = _threshold;
+        emit SkillThresholdUpdated(_threshold);
+    }
+
     /// @notice Credencia (ou descredencia) uma instituição como emissora.
-    /// Em produção, isso seria o TrustRegistry, aprovado por quórum de instituições.
     function setIssuer(address institution, bool status) external onlyOwner {
         if (status && !authorizedIssuers[institution]) {
             _issuerIndex[institution] = _issuersList.length;
@@ -58,9 +65,14 @@ contract SkillToken is ERC1155, Ownable {
     }
 
     /// @notice Define (ou corrige) o nome legível de um skillType.
-    /// Simplificação da demo: em produção, isso viveria no SkillTaxonomyRegistry.
     function setSkillName(bytes32 skillType, string calldata name) external onlyOwner {
         skillNames[skillType] = name;
+    }
+
+    /// @notice Define a URI do Open Badge associada a um skillType.
+    function setSkillBadgeURI(bytes32 skillType, string calldata uri) external onlyOwner {
+        skillBadgeURI[skillType] = uri;
+        emit SkillBadgeURISet(skillType, uri);
     }
 
     /// @notice Instituição cria um novo tipo de skill (apenas registra o nome).
@@ -101,13 +113,30 @@ contract SkillToken is ERC1155, Ownable {
         emit SkillRevoked(msg.sender, from, skillType, id);
     }
 
-    /// @notice Verifica se `holder` possui a skill informada, de qualquer instituição autorizada.
-    /// Usado pelo CertificateEmitter para checar requisitos sem "gastar" nenhum saldo.
-    function hasSkill(address holder, bytes32 skillType) external view returns (bool) {
+    /// @notice Conta quantas instituições emitiram a skill para o holder.
+    function skillAttestationCount(address holder, bytes32 skillType) external view returns (uint256 count) {
         for (uint256 i = 0; i < _issuersList.length; i++) {
             uint256 id = skillId(skillType, _issuersList[i]);
             if (balanceOf(holder, id) > 0) {
-                return true;
+                count++;
+            }
+        }
+    }
+
+    /// @notice Verifica se uma instituição específica emitiu a skill para o holder.
+    function hasSkillFrom(address issuer, address holder, bytes32 skillType) external view returns (bool) {
+        uint256 id = skillId(skillType, issuer);
+        return balanceOf(holder, id) > 0;
+    }
+
+    /// @notice Verifica se `holder` possui a skill informada (threshold de assinaturas atingido).
+    function hasSkill(address holder, bytes32 skillType) external view returns (bool) {
+        uint256 count = 0;
+        for (uint256 i = 0; i < _issuersList.length; i++) {
+            uint256 id = skillId(skillType, _issuersList[i]);
+            if (balanceOf(holder, id) > 0) {
+                count++;
+                if (count >= skillThreshold) return true;
             }
         }
         return false;
@@ -118,8 +147,12 @@ contract SkillToken is ERC1155, Ownable {
         return _knownSkillTypes;
     }
 
+    /// @notice Retorna a lista de instituições autorizadas.
+    function getIssuersList() external view returns (address[] memory) {
+        return _issuersList;
+    }
+
     /// @dev Bloqueia qualquer transferência entre contas — saldo soulbound.
-    /// Mint (from == address(0)) e burn (to == address(0)) continuam permitidos.
     function _update(address from, address to, uint256[] memory ids, uint256[] memory values)
         internal
         override
