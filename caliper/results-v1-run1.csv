@@ -1,0 +1,16 @@
+round,method,type,succ,fail,send_rate_tps,max_latency_s,min_latency_s,avg_latency_s,throughput_tps
+1,issueSkill,write,100,0,20.2,5.96,1.30,3.67,10.0
+2,hasSkill,view,200,0,100.6,0.01,0.00,0.00,100.5
+3,revoke,write,50,0,10.2,5.26,0.43,2.85,9.4
+4,createSkill,write,50,0,10.2,5.02,0.47,2.80,5.8
+5,setSkillName,write,50,0,10.2,4.99,0.19,2.61,5.7
+6,setSkillBadgeURI,write,50,0,10.2,5.03,0.24,2.66,5.6
+7,setSkillThreshold,write,50,0,10.2,4.95,0.12,2.54,5.7
+8,setIssuer,write,50,0,10.2,5.05,0.24,2.68,5.0
+9,skillId,pure,200,0,100.6,0.00,0.00,0.00,100.5
+10,skillAttestationCount,view,200,0,100.6,0.00,0.00,0.00,100.5
+11,hasSkillFrom,view,200,0,100.6,0.00,0.00,0.00,100.5
+12,getKnownSkillTypes,view,200,0,100.5,0.01,0.00,0.00,100.4
+13,getIssuersList,view,200,0,100.6,0.00,0.00,0.00,100.5
+14,getters (mix ERC-1155),view,200,0,100.6,0.00,0.00,0.00,100.5
+15,throughput (issueSkill max-rate 5s),write,25,0,5.2,4.96,0.29,2.69,2.6

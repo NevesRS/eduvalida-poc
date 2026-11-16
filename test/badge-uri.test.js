@@ -67,7 +67,7 @@ describe("Open Badge URIs", function () {
 
       // institution is owner of certEmitter
       const skillHash = ethers.keccak256(ethers.toUtf8Bytes(SKILL_NAME));
-      const tx = await certEmitter.connect(institution).createCertificateType(CERT_NAME, [skillHash]);
+      const tx = await certEmitter.connect(institution).createCertificateType(CERT_NAME, [skillHash], 0);
       const receipt = await tx.wait();
       certTypeId = 1n;
     });

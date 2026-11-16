@@ -10,6 +10,7 @@
   <header>
     <h1>EduValida POC</h1>
     <div class="role-selector">
+      <a href="/wallet.html" style="color:inherit;font-size:0.85rem;margin-right:1rem">Carteiras (assinatura 1:1) →</a>
       <label for="role">Papel:</label>
       <select id="role">
         <option value="institution">Instituição 1</option>
@@ -25,6 +26,22 @@
     <!-- Institution View -->
     <section id="institution-view" class="view">
       <h2>Instituição</h2>
+
+      <div class="card">
+        <h3>Autenticação 1:1 (módulo de carteiras)</h3>
+        <div id="inst-auth-status" class="card-hint">Não autenticado — emissões usarão a carteira demo embutida (sem vínculo no WalletRegistry).</div>
+        <form id="inst-wallet-login">
+          <label>Usuário</label>
+          <input type="text" id="inst-wallet-user" required />
+          <label>Senha</label>
+          <input type="password" id="inst-wallet-pass" required />
+          <button type="submit">Entrar</button>
+        </form>
+        <div id="inst-auth-actions" class="btn-row" style="display:none">
+          <button id="inst-wallet-logout" class="small-btn">Sair da carteira</button>
+        </div>
+        <div id="inst-issuer-status" class="card-hint"></div>
+      </div>
 
       <div class="card">
         <h3>Criar Skill</h3>
@@ -69,6 +86,13 @@
           <div id="cert-skills-select" class="skills-checkboxes">
             <em>Nenhuma skill conhecida. Emita uma skill primeiro.</em>
           </div>
+          <label>BurnAuth (EIP-5484: quem pode revogar)</label>
+          <select id="cert-burn-auth" required>
+            <option value="0">IssuerOnly — só a instituição emissora</option>
+            <option value="1">OwnerOnly — só o aluno</option>
+            <option value="2">Both — aluno ou instituição</option>
+            <option value="3">Neither — ninguém (imutável)</option>
+          </select>
           <button type="submit">Criar</button>
         </form>
       </div>
@@ -79,6 +103,20 @@
           <button type="button" id="refresh-inst-certs" class="refresh-btn" title="Atualizar">&#x21bb;</button>
         </div>
         <div id="inst-cert-types-list"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Assinar Certificado</h3>
+          <button type="button" id="refresh-sign-certs" class="refresh-btn" title="Atualizar">&#x21bb;</button>
+        </div>
+        <p class="card-hint">Informe o endereço do aluno para verificar quais certificados você precisa assinar.</p>
+        <form id="sign-cert-form">
+          <label>Endereço do aluno <button type="button" class="copy-btn inline" data-copy="student-address" title="Copiar endereço do aluno">⧉</button></label>
+          <input type="text" id="sign-student-addr" placeholder="0x..." required />
+          <button type="submit">Buscar</button>
+        </form>
+        <div id="sign-cert-list" class="sign-cert-list"></div>
       </div>
 
       <div class="card">
@@ -93,6 +131,22 @@
             <em>Crie um tipo de certificado primeiro.</em>
           </div>
           <button type="submit">Salvar</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>Emitir Certificado Consensual (EIP-5484)</h3>
+        <p class="card-hint">O aluno assina o consentimento (no card "Certificados Disponíveis" da visão dele); a assinatura aparece aqui automaticamente. O contrato valida o consentimento via <code>ecrecover</code> antes de mintar o SBT.</p>
+        <form id="issue-consent-cert-form">
+          <label>Tipo de certificado</label>
+          <select id="consent-issue-cert-select" required>
+            <option value="">Nenhum certificado</option>
+          </select>
+          <label>Endereço do aluno</label>
+          <input type="text" id="consent-issue-student-addr" placeholder="0x..." required />
+          <label>Assinatura de consentimento do aluno</label>
+          <input type="text" id="consent-issue-signature" placeholder="0x..." required />
+          <button type="submit">Emitir certificado</button>
         </form>
       </div>
 
@@ -139,6 +193,21 @@
     <!-- Student View -->
     <section id="student-view" class="view" style="display:none">
       <h2>Aluno</h2>
+
+      <div class="card">
+        <h3>Autenticação 1:1 (módulo de carteiras)</h3>
+        <div id="stu-auth-status" class="card-hint">Não autenticado — reivindicações usarão a carteira demo embutida.</div>
+        <form id="stu-wallet-login">
+          <label>Usuário</label>
+          <input type="text" id="stu-wallet-user" required />
+          <label>Senha</label>
+          <input type="password" id="stu-wallet-pass" required />
+          <button type="submit">Entrar</button>
+        </form>
+        <div id="stu-auth-actions" class="btn-row" style="display:none">
+          <button id="stu-wallet-logout" class="small-btn">Sair da carteira</button>
+        </div>
+      </div>
 
       <div class="card">
         <div class="card-header">

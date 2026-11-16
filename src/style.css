@@ -77,6 +77,14 @@ main {
   margin-bottom: 0.8rem;
 }
 
+.card-hint {
+  font-size: 0.8rem;
+  color: #6680aa;
+  margin: 0.4rem 0 0.8rem;
+  line-height: 1.5;
+  font-style: italic;
+}
+
 .refresh-btn {
   background: transparent;
   color: #4a5a7a;
@@ -98,7 +106,7 @@ label {
   margin-top: 0.5rem;
 }
 
-input[type="text"], input[type="number"] {
+input[type="text"], input[type="number"], input[type="password"] {
   width: 100%;
   background: #0a0f1e;
   border: 1px solid #1a2f55;
@@ -109,7 +117,7 @@ input[type="text"], input[type="number"] {
   border-radius: 3px;
 }
 
-input[type="text"]:focus, input[type="number"]:focus {
+input[type="text"]:focus, input[type="number"]:focus, input[type="password"]:focus {
   outline: none;
   border-color: #82AFFF;
 }
@@ -154,6 +162,16 @@ button:disabled {
 #my-skills-list, #cert-types-list {
   font-size: 0.85rem;
   min-height: 2rem;
+}
+
+.sign-cert-list {
+  font-size: 0.85rem;
+}
+
+.sign-cert-list em {
+  color: #6680aa;
+  font-style: italic;
+  font-size: 0.8rem;
 }
 
 .skill-item {
@@ -234,7 +252,10 @@ button:disabled {
 .cert-item .cert-name { color: #82AFFF; font-weight: bold; }
 .cert-item .cert-status { font-size: 0.8rem; color: #6680aa; }
 .cert-item .cert-status.complete { color: #4ecca3; }
+.cert-item .cert-status.pending-sign { color: #ffcc66; }
 .cert-item.claimed { border-left: 3px solid #4ecca3; padding-left: 0.6rem; }
+.cert-item.clickable { cursor: pointer; }
+.cert-item.clickable:hover { background: rgba(130, 175, 255, 0.08); }
 
 .signer-status {
   margin: 0.3rem 0;
@@ -358,3 +379,21 @@ button:disabled {
 
 .missing-list { font-size: 0.8rem; color: #ff6b6b; margin-top: 0.3rem; }
 .missing-list span { display: inline-block; background: #1a1025; padding: 0.15rem 0.4rem; border-radius: 3px; margin: 0.15rem 0.2rem 0.15rem 0; }
+
+.header-link {
+  color: #6680aa;
+  font-size: 0.75rem;
+  margin-right: 1rem;
+  text-decoration: none;
+}
+
+.header-link:hover { color: #82AFFF; }
+
+.btn-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.btn-row button { margin-top: 0; }

@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EduValida POC — Carteiras (assinatura 1:1)</title>
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <header>
+    <h1>EduValida — Módulo de Carteiras (assinatura 1:1)</h1>
+    <div class="role-selector">
+      <span id="wallet-info">não autenticado</span>
+      <button id="copy-wallet" class="copy-btn" title="Copiar endereço" style="display:none">⧉</button>
+      <button id="logout-btn" class="small-btn" style="display:none">Sair</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Auth -->
+    <section id="auth-view" class="view">
+      <h2>Autenticação</h2>
+      <div class="card">
+        <h3>Login</h3>
+        <form id="login-form">
+          <label>Usuário</label>
+          <input type="text" id="login-username" required />
+          <label>Senha</label>
+          <input type="password" id="login-password" required />
+          <button type="submit">Entrar</button>
+        </form>
+      </div>
+      <div class="card">
+        <h3>Registro</h3>
+        <p class="card-hint">Cria o usuário, gera a carteira (chave privada cifrada no servidor) e registra o vínculo <strong>carteira → usuário</strong> na blockchain via assinatura validada por <code>ecrecover</code>. Contas de instituição precisam ser <strong>autorizadas pelo admin</strong> antes de emitir on-chain.</p>
+        <form id="register-form">
+          <label>Usuário</label>
+          <input type="text" id="register-username" required />
+          <label>Senha</label>
+          <input type="password" id="register-password" required />
+          <label>Perfil</label>
+          <select id="register-role">
+            <option value="student">Aluno</option>
+            <option value="institution">Instituição (emissora)</option>
+          </select>
+          <button type="submit">Registrar na blockchain</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- Admin da plataforma -->
+    <section id="admin-view" class="view" style="display:none">
+      <h2>Admin da Plataforma</h2>
+      <div class="card">
+        <h3>Autorização de Emissoras</h3>
+        <p class="card-hint">Somente o admin autoriza quem pode emitir skills/certificados on-chain. Nada de self-service.</p>
+        <div id="admin-institutions"><em>Carregando...</em></div>
+      </div>
+
+      <div class="card">
+        <h3>Criar Skill (catálogo)</h3>
+        <form id="admin-skill-form">
+          <label>Nome da skill</label>
+          <input type="text" id="admin-skill-name" placeholder="ex: Solidity Basics" required />
+          <button type="submit">Criar</button>
+        </form>
+        <div id="admin-skill-result"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Criar Tipo de Certificado</h3>
+          <button type="button" id="admin-refresh-skills" class="refresh-btn" title="Atualizar skills">&#x21bb;</button>
+        </div>
+        <form id="admin-cert-form">
+          <label>Nome do certificado</label>
+          <input type="text" id="admin-cert-name" placeholder="ex: Blockchain Developer" required />
+          <label>Skills exigidas</label>
+          <div id="admin-cert-skills" class="skills-checkboxes"><em>Carregando skills...</em></div>
+          <label>BurnAuth (EIP-5484: quem pode revogar)</label>
+          <select id="admin-cert-burn-auth" required>
+            <option value="0">IssuerOnly — só a instituição emissora</option>
+            <option value="1">OwnerOnly — só o aluno</option>
+            <option value="2">Both — aluno ou instituição</option>
+            <option value="3">Neither — ninguém (imutável)</option>
+          </select>
+          <button type="submit">Criar</button>
+        </form>
+        <div id="admin-cert-result"></div>
+      </div>
+
+      <div class="card">
+        <h3>Threshold de Skills</h3>
+        <form id="admin-threshold-form">
+          <label>Mínimo de instituições por skill (atual: <span id="admin-current-threshold">1</span>)</label>
+          <input type="number" id="admin-threshold-input" min="1" placeholder="1" required />
+          <button type="submit">Salvar</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>Signatários Obrigatórios do Certificado</h3>
+        <form id="admin-signers-form">
+          <label>Tipo de certificado</label>
+          <select id="admin-signers-cert-select" required></select>
+          <label>Instituições signatárias (nenhuma marcada = sem exigência)</label>
+          <div id="admin-signers-list" class="skills-checkboxes">
+            <em>Carregando instituições...</em>
+          </div>
+          <button type="submit">Salvar</button>
+        </form>
+        <div id="admin-signers-result"></div>
+      </div>
+
+      <div class="card">
+        <h3>Vincular Open Badge — Skill</h3>
+        <form id="admin-skill-badge-form">
+          <label>Skill</label>
+          <select id="admin-skill-badge-select" required></select>
+          <label>URI do Open Badge</label>
+          <input type="text" id="admin-skill-badge-uri" placeholder="https://ipfs.io/ipfs/..." required />
+          <button type="submit">Vincular</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>Vincular Open Badge — Certificado</h3>
+        <form id="admin-cert-badge-form">
+          <label>Tipo de certificado</label>
+          <select id="admin-cert-badge-select" required></select>
+          <label>URI do Open Badge</label>
+          <input type="text" id="admin-cert-badge-uri" placeholder="https://ipfs.io/ipfs/..." required />
+          <button type="submit">Vincular</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>Deletar Tipo de Certificado</h3>
+        <form id="admin-delete-cert-form">
+          <label>Tipo de certificado</label>
+          <select id="admin-delete-cert-select" required></select>
+          <button type="submit">Deletar (desativa o tipo)</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- Carteira autenticada -->
+    <section id="wallet-view" class="view" style="display:none">
+      <h2>Minha Carteira</h2>
+      <div class="card">
+        <div class="card-header">
+          <h3>Identidade</h3>
+          <button type="button" id="refresh-me" class="refresh-btn" title="Atualizar">&#x21bb;</button>
+        </div>
+        <div id="wallet-details"><em>Carregando...</em></div>
+      </div>
+
+      <div class="card">
+        <h3>Consulta on-chain: carteira → usuário</h3>
+        <form id="lookup-form">
+          <label>Endereço da carteira</label>
+          <input type="text" id="lookup-address" placeholder="0x..." required />
+          <button type="submit">Consultar WalletRegistry</button>
+        </form>
+        <div id="lookup-result"></div>
+      </div>
+
+      <div class="card" id="card-issuer-pending" style="display:none">
+        <h3>&#9203; Aguardando autorização</h3>
+        <p class="card-hint">Sua instituição está registrada, mas o <strong>admin da plataforma</strong> ainda não a autorizou como emissora on-chain (o vínculo fica no SkillToken). Os cards de emissão aparecem após a autorização.</p>
+      </div>
+      <div class="card" id="card-issue-skill">
+        <h3>Fluxo Real — Emitir Skill (instituição)</h3>
+        <p class="card-hint">A transação é assinada pela <strong>sua carteira autenticada</strong> — o atestado fica provado on-chain e o emissor é resolvido via WalletRegistry.</p>
+        <form id="issue-skill-form">
+          <label>Skill</label>
+          <select id="issue-skill-select" required></select>
+          <label>Endereço do aluno</label>
+          <input type="text" id="issue-skill-student" placeholder="0x..." required />
+          <button type="submit">Emitir</button>
+        </form>
+        <div id="issue-skill-result"></div>
+      </div>
+
+      <div class="card">
+        <h3>Quem Atestou (validação criptográfica)</h3>
+        <p class="card-hint">Consulta on-chain quem emitiu a skill para o aluno e resolve a identidade de cada atestante.</p>
+        <form id="attestations-form">
+          <label>Endereço do aluno</label>
+          <input type="text" id="attestations-student" placeholder="0x..." required />
+          <label>Skill</label>
+          <select id="attestations-skill-select" required></select>
+          <button type="submit">Consultar</button>
+        </form>
+        <div id="attestations-result"></div>
+      </div>
+
+      <div class="card" id="card-consent">
+        <h3>EIP-5484 — Assinar Consentimento (aluno)</h3>
+        <p class="card-hint">Certificado é SBT consensual: a emissão só acontece se <strong>você</strong> (aluno) assinar o consentimento de receber o certificado desta instituição. A assinatura é validada on-chain via <code>ecrecover</code>.</p>
+        <form id="consent-cert-form">
+          <label>Tipo de certificado</label>
+          <select id="consent-cert-select" required></select>
+          <label>Instituição emissora (endereço)</label>
+          <input type="text" id="consent-cert-issuer" placeholder="0x..." required />
+          <button type="submit">Assinar consentimento</button>
+        </form>
+        <div id="consent-cert-result"></div>
+      </div>
+
+      <div class="card" id="card-my-skills">
+        <div class="card-header">
+          <h3>Minhas Skills</h3>
+          <button type="button" id="refresh-my-skills" class="refresh-btn" title="Atualizar">&#x21bb;</button>
+        </div>
+        <div id="my-skills-list"><em>Carregando...</em></div>
+      </div>
+
+      <div class="card" id="card-my-certs">
+        <div class="card-header">
+          <h3>Meus Certificados</h3>
+          <button type="button" id="refresh-my-certs" class="refresh-btn" title="Atualizar">&#x21bb;</button>
+        </div>
+        <div id="my-certs-list"><em>Carregando...</em></div>
+      </div>
+
+      <div class="card" id="card-issue-cert">
+        <h3>EIP-5484 — Emitir Certificado Consensual (instituição)</h3>
+        <p class="card-hint">Emite o certificado ao aluno usando a assinatura de consentimento dele (obtida no card acima ou pelo próprio aluno). O contrato valida o consentimento antes de mintar o SBT.</p>
+        <form id="issue-cert-form">
+          <label>Tipo de certificado</label>
+          <select id="issue-cert-select" required></select>
+          <label>Endereço do aluno</label>
+          <input type="text" id="issue-cert-student" placeholder="0x..." required />
+          <label>Assinatura de consentimento do aluno</label>
+          <input type="text" id="issue-cert-consent" placeholder="0x..." required />
+          <button type="submit">Emitir certificado</button>
+        </form>
+        <div id="issue-cert-result"></div>
+      </div>
+
+      <div class="card" id="card-revoke">
+        <h3>EIP-5484 — Revogar Certificado (BurnAuth)</h3>
+        <p class="card-hint">A revogação segue o <strong>BurnAuth</strong> do token: IssuerOnly (só a instituição), OwnerOnly (só o aluno), Both (ambos) ou Neither (ninguém). O contrato valida quem pode queimar.</p>
+        <form id="revoke-cert-form">
+          <label>Endereço do aluno</label>
+          <input type="text" id="revoke-student-addr" placeholder="0x..." required />
+          <label>Tipo de certificado</label>
+          <select id="revoke-cert-select" required></select>
+          <button type="submit">Revogar (queimar)</button>
+        </form>
+        <div id="revoke-cert-result"></div>
+      </div>
+
+      <div class="card" id="card-sign-cert">
+        <h3>Assinar Certificado (falta de signatários)</h3>
+        <p class="card-hint">Verifica, para um aluno, quais instituições signatárias ainda precisam atestar as skills exigidas do tipo de certificado.</p>
+        <form id="sign-cert-form">
+          <label>Endereço do aluno</label>
+          <input type="text" id="sign-student-addr" placeholder="0x..." required />
+          <label>Tipo de certificado</label>
+          <select id="sign-cert-select" required></select>
+          <button type="submit">Consultar</button>
+        </form>
+        <div id="sign-cert-result"></div>
+      </div>
+    </section>
+  </main>
+
+  <aside id="log-panel">
+    <h3>Log de Operações</h3>
+    <div id="log-entries"></div>
+  </aside>
+
+  <script type="module" src="/src-wallet/main.js"></script>
+</body>
+</html>

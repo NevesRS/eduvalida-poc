@@ -46,7 +46,11 @@ async function main() {
   await tx3.wait();
   console.log("Ownership transferred.");
 
+  const outPath = path.join(__dirname, "..", "deployed-addresses.json");
+  let existing = {};
+  try { existing = JSON.parse(fs.readFileSync(outPath, "utf8")); } catch {}
   const addresses = {
+    ...existing,
     skillToken: skillTokenAddr,
     certificateEmitter: certEmitterAddr,
     deployer: deployer.address,
@@ -54,8 +58,6 @@ async function main() {
     institution2: institution2.address,
     student: student.address,
   };
-
-  const outPath = path.join(__dirname, "..", "deployed-addresses.json");
   fs.writeFileSync(outPath, JSON.stringify(addresses, null, 2));
   console.log("Addresses saved to deployed-addresses.json");
 }

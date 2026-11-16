@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -16,25 +16,28 @@ interface IERC5484 {
 
 /**
  * @title CertificateEmitter
- * @notice PROVA DE CONCEITO — certificado final como token soulbound (ERC-5484),
- *         emitido quando o aluno já possui, em saldo ERC-1155 (SkillToken), todas
- *         as skills exigidas. Revogável apenas pelo emissor.
- *
- *         Multi-assinatura: `requiredSigners` define quais instituições devem
- *         ter emitido as skills exigidas para que o certificado possa ser
- *         reivindicado.
+ * @notice PROVA DE CONCEITO — certificado final como SBT consensual (EIP-5484).
+ *         Fluxo 1:1 aplicado: a EMISSÃO é feita pela instituição (wallet autenticada),
+ *         mas só acontece com o CONSENTIMENTO do aluno — ambos concordam.
+ *         A assinatura de consentimento do aluno é validada on-chain via ecrecover.
+ *         Quem pode REVOGAR é definido pelo BurnAuth do tipo de certificado.
  */
 contract CertificateEmitter is ERC721, IERC5484, Ownable {
     SkillToken public immutable skillToken;
 
+    string public constant CONSENT_PREFIX = "EduValidaConsent:";
+
     struct CertificateType {
         string name;
         bytes32[] requiredSkills;
+        BurnAuth burnAuth;
         bool exists;
     }
 
     mapping(uint256 => CertificateType) public certificateTypes;
     mapping(uint256 => string) public certificateBadgeURI;
+    mapping(uint256 => BurnAuth) private _tokenBurnAuth;
+    mapping(uint256 => address) public tokenIssuer;
     mapping(address => mapping(uint256 => bool)) public hasClaimed;
     mapping(address => mapping(uint256 => uint256)) public studentTokenId;
     mapping(uint256 => uint256) private _tokenToCertType;
@@ -43,7 +46,7 @@ contract CertificateEmitter is ERC721, IERC5484, Ownable {
     uint256 private _nextTokenId;
 
     event CertificateTypeCreated(uint256 indexed certTypeId, string name);
-    event CertificateClaimed(address indexed student, uint256 indexed certTypeId, uint256 tokenId);
+    event CertificateIssued(address indexed issuer, address indexed student, uint256 indexed certTypeId, uint256 tokenId, BurnAuth burnAuth);
     event CertificateRevoked(address indexed student, uint256 indexed certTypeId, uint256 tokenId);
     event CertificateBadgeURISet(uint256 indexed certTypeId, string uri);
     event RequiredSignersSet(uint256 indexed certTypeId, address[] signers);
@@ -52,8 +55,8 @@ contract CertificateEmitter is ERC721, IERC5484, Ownable {
         skillToken = SkillToken(skillTokenAddress);
     }
 
-    /// @notice Instituição (owner) define um novo tipo de certificado e as skills exigidas.
-    function createCertificateType(string calldata name, bytes32[] calldata requiredSkills)
+    /// @notice Instituição (owner) define um tipo de certificado: skills exigidas + BurnAuth.
+    function createCertificateType(string calldata name, bytes32[] calldata requiredSkills, BurnAuth burnAuth)
         external
         onlyOwner
         returns (uint256 certTypeId)
@@ -64,13 +67,115 @@ contract CertificateEmitter is ERC721, IERC5484, Ownable {
         certificateTypes[certTypeId] = CertificateType({
             name: name,
             requiredSkills: requiredSkills,
+            burnAuth: burnAuth,
             exists: true
         });
 
         emit CertificateTypeCreated(certTypeId, name);
     }
 
-    /// @notice Define quais instituições devem assinar (emitir skills) para um certificado.
+    /// @notice Instituição emite o certificado AO aluno — exige consentimento assinado pelo aluno.
+    function issueCertificate(uint256 certTypeId, address student, bytes calldata consentSignature)
+        external
+        returns (uint256 tokenId)
+    {
+        CertificateType memory cert = certificateTypes[certTypeId];
+        require(cert.exists, "CertificateEmitter: tipo de certificado inexistente");
+        require(skillToken.authorizedIssuers(msg.sender), "CertificateEmitter: emissor nao autorizado");
+        require(!hasClaimed[student][certTypeId], "CertificateEmitter: certificado ja emitido");
+
+        // Consenso (EIP-5484): o aluno assinou o consentimento de receber este certificado desta instituição
+        require(
+            _validateConsent(certTypeId, student, msg.sender, consentSignature),
+            "CertificateEmitter: consentimento invalido"
+        );
+
+        // verifica skills (threshold de assinaturas)
+        for (uint256 i = 0; i < cert.requiredSkills.length; i++) {
+            require(
+                skillToken.hasSkill(student, cert.requiredSkills[i]),
+                "CertificateEmitter: requisito de skill nao cumprido"
+            );
+        }
+
+        // verifica signatários obrigatórios
+        require(allSignersSigned(student, certTypeId), "CertificateEmitter: signatarios pendentes");
+
+        tokenId = ++_nextTokenId;
+        _tokenBurnAuth[tokenId] = cert.burnAuth;
+        tokenIssuer[tokenId] = msg.sender;
+        _safeMint(student, tokenId);
+        hasClaimed[student][certTypeId] = true;
+        studentTokenId[student][certTypeId] = tokenId;
+        _tokenToCertType[tokenId] = certTypeId;
+
+        emit CertificateIssued(msg.sender, student, certTypeId, tokenId, cert.burnAuth);
+        emit Issued(msg.sender, student, tokenId, cert.burnAuth);
+    }
+
+    /// @notice Valida a assinatura EIP-191 do consentimento: deve ser do próprio aluno.
+    function _validateConsent(uint256 certTypeId, address student, address issuer, bytes calldata consentSignature)
+        internal
+        pure
+        returns (bool)
+    {
+        if (consentSignature.length != 65) return false;
+
+        bytes32 messageHash = keccak256(
+            abi.encodePacked(CONSENT_PREFIX, certTypeId, student, issuer)
+        );
+        bytes32 ethSignedHash = keccak256(
+            abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHash)
+        );
+
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+        assembly {
+            r := calldataload(consentSignature.offset)
+            s := calldataload(add(consentSignature.offset, 32))
+            v := byte(0, calldataload(add(consentSignature.offset, 64)))
+        }
+        if (v < 27) v += 27;
+
+        return ecrecover(ethSignedHash, v, r, s) == student;
+    }
+
+    /// @notice EIP-5484: BurnAuth efetivo do token.
+    function burnAuth(uint256 tokenId) external view returns (BurnAuth) {
+        require(_ownerOf(tokenId) != address(0), "CertificateEmitter: token inexistente");
+        return _tokenBurnAuth[tokenId];
+    }
+
+    /// @notice Revogação guiada pelo BurnAuth do token.
+    function revokeCertificate(uint256 tokenId) external {
+        require(_ownerOf(tokenId) != address(0), "CertificateEmitter: token inexistente");
+
+        BurnAuth auth = _tokenBurnAuth[tokenId];
+        address student = ownerOf(tokenId);
+        address issuer = tokenIssuer[tokenId];
+
+        bool canBurn = auth == BurnAuth.Both
+            ? (msg.sender == student || msg.sender == issuer)
+            : auth == BurnAuth.IssuerOnly
+                ? msg.sender == issuer
+                : auth == BurnAuth.OwnerOnly
+                    ? msg.sender == student
+                    : false;
+        require(canBurn, "CertificateEmitter: burnAuth nao permite revogacao");
+
+        uint256 certTypeIdFound = _tokenToCertType[tokenId];
+        _burn(tokenId);
+        delete _tokenToCertType[tokenId];
+
+        if (certTypeIdFound != 0) {
+            hasClaimed[student][certTypeIdFound] = false;
+            delete studentTokenId[student][certTypeIdFound];
+            emit CertificateRevoked(student, certTypeIdFound, tokenId);
+        }
+    }
+
+    /// @notice Owner define quais instituições devem assinar para um certificado.
     function setRequiredSigners(uint256 certTypeId, address[] calldata signers) external onlyOwner {
         require(certificateTypes[certTypeId].exists, "CertificateEmitter: tipo de certificado inexistente");
         _requiredSigners[certTypeId] = signers;
@@ -87,7 +192,7 @@ contract CertificateEmitter is ERC721, IERC5484, Ownable {
         CertificateType memory cert = certificateTypes[certTypeId];
         address[] memory signers = _requiredSigners[certTypeId];
 
-        if (signers.length == 0) return true; // sem signatários exigidos, libera
+        if (signers.length == 0) return true;
 
         for (uint256 i = 0; i < signers.length; i++) {
             for (uint256 j = 0; j < cert.requiredSkills.length; j++) {
@@ -112,7 +217,6 @@ contract CertificateEmitter is ERC721, IERC5484, Ownable {
 
         address[] memory temp = new address[](signers.length);
         uint256 count;
-
         for (uint256 i = 0; i < signers.length; i++) {
             bool signed = true;
             for (uint256 j = 0; j < cert.requiredSkills.length; j++) {
@@ -139,40 +243,8 @@ contract CertificateEmitter is ERC721, IERC5484, Ownable {
         emit CertificateBadgeURISet(certTypeId, uri);
     }
 
-    /// @notice Aluno reivindica o certificado se ja possuir todas as skills exigidas
-    ///         e todos os signatários tiverem assinado.
-    function claimCertificate(uint256 certTypeId) external returns (uint256 tokenId) {
-        CertificateType memory cert = certificateTypes[certTypeId];
-        require(cert.exists, "CertificateEmitter: tipo de certificado inexistente");
-        require(!hasClaimed[msg.sender][certTypeId], "CertificateEmitter: certificado ja reivindicado");
-
-        // verifica skills (threshold de assinaturas)
-        for (uint256 i = 0; i < cert.requiredSkills.length; i++) {
-            require(
-                skillToken.hasSkill(msg.sender, cert.requiredSkills[i]),
-                "CertificateEmitter: requisito de skill nao cumprido"
-            );
-        }
-
-        // verifica signatários obrigatórios
-        require(allSignersSigned(msg.sender, certTypeId), "CertificateEmitter: signatarios pendentes");
-
-        tokenId = ++_nextTokenId;
-        _safeMint(msg.sender, tokenId);
-        hasClaimed[msg.sender][certTypeId] = true;
-        studentTokenId[msg.sender][certTypeId] = tokenId;
-        _tokenToCertType[tokenId] = certTypeId;
-
-        emit CertificateClaimed(msg.sender, certTypeId, tokenId);
-        emit Issued(owner(), msg.sender, tokenId, BurnAuth.IssuerOnly);
-    }
-
     /// @notice Skills exigidas por um tipo de certificado.
-    function getRequiredSkills(uint256 certTypeId)
-        external
-        view
-        returns (bytes32[] memory)
-    {
+    function getRequiredSkills(uint256 certTypeId) external view returns (bytes32[] memory) {
         return certificateTypes[certTypeId].requiredSkills;
     }
 
@@ -199,21 +271,6 @@ contract CertificateEmitter is ERC721, IERC5484, Ownable {
         }
     }
 
-    /// @notice Só o owner (emissor) pode revogar um certificado já emitido.
-    function revokeCertificate(uint256 tokenId) external onlyOwner {
-        address student = ownerOf(tokenId);
-        uint256 certTypeIdFound = _tokenToCertType[tokenId];
-
-        _burn(tokenId);
-        delete _tokenToCertType[tokenId];
-
-        if (certTypeIdFound != 0) {
-            hasClaimed[student][certTypeIdFound] = false;
-            delete studentTokenId[student][certTypeIdFound];
-            emit CertificateRevoked(student, certTypeIdFound, tokenId);
-        }
-    }
-
     /// @notice Instituição (owner) remove um tipo de certificado.
     function deleteCertificateType(uint256 certTypeId) external onlyOwner {
         require(certificateTypes[certTypeId].exists, "CertificateEmitter: tipo inexistente");
@@ -232,10 +289,6 @@ contract CertificateEmitter is ERC721, IERC5484, Ownable {
             ids[i] = i + 1;
         }
         return ids;
-    }
-
-    function burnAuth(uint256 /*tokenId*/) external pure override returns (BurnAuth) {
-        return BurnAuth.IssuerOnly;
     }
 
     /// @dev Certificado final também é intransferível.

@@ -1,0 +1,420 @@
+
+> eduvalida-poc@1.0.0 caliper
+> caliper launch manager --caliper-benchconfig caliper/benchconfig.yaml --caliper-networkconfig caliper/network.json --caliper-workspace .
+
+2026.10.16-11:54:44.221[32m info [39m [caliper] [cli-launch-manager] 	Set workspace path: /home/nevesrs/Codes/eduvalida-poc
+2026.10.16-11:54:44.221[32m info [39m [caliper] [cli-launch-manager] 	Set benchmark configuration path: /home/nevesrs/Codes/eduvalida-poc/caliper/benchconfig.yaml
+2026.10.16-11:54:44.221[32m info [39m [caliper] [cli-launch-manager] 	Set network configuration path: /home/nevesrs/Codes/eduvalida-poc/caliper/network.json
+2026.10.16-11:54:44.221[32m info [39m [caliper] [cli-launch-manager] 	Set SUT type: ethereum
+2026.10.16-11:54:44.540[32m info [39m [caliper] [benchmark-validator] 	No observer specified, will default to `none`
+2026.10.16-11:54:44.541[32m info [39m [caliper] [caliper-engine] 	Starting benchmark flow
+2026.10.16-11:54:44.541[32m info [39m [caliper] [caliper-engine] 	Network configuration attribute "caliper.command.start" is not present, skipping start command
+2026.10.16-11:54:44.585[32m info [39m [caliper] [caliper-engine] 	Executed "init" step in 0.029 seconds
+2026.10.16-11:54:44.586[32m info [39m [caliper] [ethereum-connector] 	Creating contracts...
+2026.10.16-11:54:49.119[32m info [39m [caliper] [ethereum-connector] 	Deployed contract SkillToken at 0xB2C71624Fa35a296A6d8B3ca6768df2813Bb7D12
+2026.10.16-11:54:49.120[32m info [39m [caliper] [caliper-engine] 	Executed "install" step in 4.534 seconds
+2026.10.16-11:54:49.124[32m info [39m [caliper] [monitor.js] 	No resource monitors specified
+2026.10.16-11:54:49.135[32m info [39m [caliper] [default-observer] 	Observer interval set to 5000 milliseconds
+2026.10.16-11:54:49.144[32m info [39m [caliper] [round-orchestrator] 	Preparing worker connections
+2026.10.16-11:54:49.144[32m info [39m [caliper] [worker-orchestrator] 	Launching worker 1 of 1
+2026.10.16-11:54:49.153[32m info [39m [caliper] [worker-orchestrator] 	Messenger not configured, entering configure phase...
+2026.10.16-11:54:49.154[32m info [39m [caliper] [worker-orchestrator] 	No existing workers detected, entering worker launch phase...
+2026.10.16-11:54:49.155[32m info [39m [caliper] [worker-orchestrator] 	Waiting for 1 workers to be connected...
+2026.10.16-11:54:49.402[32m info [39m [caliper] [cli-launch-worker] 	Set workspace path: /home/nevesrs/Codes/eduvalida-poc
+2026.10.16-11:54:49.402[32m info [39m [caliper] [cli-launch-worker] 	Set benchmark configuration path: /home/nevesrs/Codes/eduvalida-poc/caliper/benchconfig.yaml
+2026.10.16-11:54:49.403[32m info [39m [caliper] [cli-launch-worker] 	Set network configuration path: /home/nevesrs/Codes/eduvalida-poc/caliper/network.json
+2026.10.16-11:54:49.403[32m info [39m [caliper] [cli-launch-worker] 	Set SUT type: ethereum
+2026.10.16-11:54:49.734[32m info [39m [caliper] [worker-orchestrator] 	1 workers connected, progressing to worker assignment phase.
+2026.10.16-11:54:49.734[32m info [39m [caliper] [worker-orchestrator] 	Workers currently unassigned, awaiting index assignment...
+2026.10.16-11:54:49.734[32m info [39m [caliper] [worker-orchestrator] 	Waiting for 1 workers to be assigned...
+2026.10.16-11:54:49.771[32m info [39m [caliper] [worker-orchestrator] 	1 workers assigned, progressing to worker initialization phase.
+2026.10.16-11:54:49.772[32m info [39m [caliper] [worker-orchestrator] 	Waiting for 1 workers to be ready...
+2026.10.16-11:54:49.772[32m info [39m [caliper] [worker-message-handler] 	Initializing Worker#0...
+2026.10.16-11:54:49.788[32m info [39m [caliper] [worker-message-handler] 	Worker#0 initialized
+2026.10.16-11:54:49.789[32m info [39m [caliper] [worker-orchestrator] 	1 workers ready, progressing to test preparation phase.
+2026.10.16-11:54:49.789[32m info [39m [caliper] [round-orchestrator] 	Started round 1 (issueSkill)
+2026.10.16-11:54:49.793[32m info [39m [caliper] [worker-message-handler] 	Preparing Worker#0 for Round#0
+2026.10.16-11:54:49.834[32m info [39m [caliper] [caliper-worker] 	Info: worker 0 prepare test phase for round 0 is starting...
+2026.10.16-11:55:44.034[32m info [39m [caliper] [caliper-worker] 	Info: worker 0 prepare test phase for round 0 is completed
+2026.10.16-11:55:44.035[32m info [39m [caliper] [worker-message-handler] 	Worker#0 prepared for Round#0
+2026.10.16-11:55:44.036[32m info [39m [caliper] [worker-orchestrator] 	1 workers prepared, progressing to test phase.
+2026.10.16-11:55:44.037[32m info [39m [caliper] [round-orchestrator] 	Monitors successfully started
+2026.10.16-11:55:44.038[32m info [39m [caliper] [worker-message-handler] 	Worker#0 is starting Round#0
+2026.10.16-11:55:44.047[32m info [39m [caliper] [caliper-worker] 	Worker #0 starting workload loop
+2026.10.16-11:55:49.054[32m info [39m [caliper] [default-observer] 	[issueSkill Round 0 Transaction Info] - Submitted: 80 Succ: 0 Fail:0 Unfinished:80
+2026.10.16-11:55:54.042[32m info [39m [caliper] [default-observer] 	[issueSkill Round 0 Transaction Info] - Submitted: 100 Succ: 100 Fail:0 Unfinished:0
+2026.10.16-11:55:55.034[32m info [39m [caliper] [worker-message-handler] 	Worker#0 finished Round#0
+2026.10.16-11:56:00.035[32m info [39m [caliper] [default-observer] 	Resetting txCount indicator count
+2026.10.16-11:56:00.035[32m info [39m [caliper] [report-builder] 	### Test result ###
+2026.10.16-11:56:00.038[32m info [39m [caliper] [report-builder] 	
++------------+------+------+-----------------+-----------------+-----------------+-----------------+------------------+
+| Name       | Succ | Fail | Send Rate (TPS) | Max Latency (s) | Min Latency (s) | Avg Latency (s) | Throughput (TPS) |
+|------------|------|------|-----------------|-----------------|-----------------|-----------------|------------------|
+| issueSkill | 100  | 0    | 20.2            | 5.40            | 0.65            | 3.05            | 10.0             |
++------------+------+------+-----------------+-----------------+-----------------+-----------------+------------------+
+
+2026.10.16-11:56:00.039[32m info [39m [caliper] [round-orchestrator] 	Finished round 1 (issueSkill) in 9.984 seconds
+2026.10.16-11:56:00.039[32m info [39m [caliper] [monitor.js] 	Stopping all monitors
+2026.10.16-11:56:00.039[32m info [39m [caliper] [round-orchestrator] 	Waiting 5 seconds for the next round...
+2026.10.16-11:56:05.063[32m info [39m [caliper] [round-orchestrator] 	Started round 2 (hasSkill)
+2026.10.16-11:56:05.064[32m info [39m [caliper] [worker-message-handler] 	Preparing Worker#0 for Round#1
+2026.10.16-11:56:05.072[32m info [39m [caliper] [caliper-worker] 	Info: worker 0 prepare test phase for round 1 is starting...
+2026.10.16-11:57:44.034[32m info [39m [caliper] [caliper-worker] 	Info: worker 0 prepare test phase for round 1 is completed
+2026.10.16-11:57:44.034[32m info [39m [caliper] [worker-message-handler] 	Worker#0 prepared for Round#1
+2026.10.16-11:57:44.035[32m info [39m [caliper] [worker-orchestrator] 	1 workers prepared, progressing to test phase.
+2026.10.16-11:57:44.035[32m info [39m [caliper] [round-orchestrator] 	Monitors successfully started
+2026.10.16-11:57:44.036[32m info [39m [caliper] [worker-message-handler] 	Worker#0 is starting Round#1
+2026.10.16-11:57:44.042[32m info [39m [caliper] [caliper-worker] 	Worker #0 starting workload loop
+2026.10.16-11:57:47.133[32m info [39m [caliper] [worker-message-handler] 	Worker#0 finished Round#1
+2026.10.16-11:57:52.143[32m info [39m [caliper] [default-observer] 	Resetting txCount indicator count
+2026.10.16-11:57:52.144[32m info [39m [caliper] [report-builder] 	### Test result ###
+2026.10.16-11:57:52.144[32m info [39m [caliper] [report-builder] 	
++----------+------+------+-----------------+-----------------+-----------------+-----------------+------------------+
+| Name     | Succ | Fail | Send Rate (TPS) | Max Latency (s) | Min Latency (s) | Avg Latency (s) | Throughput (TPS) |
+|----------|------|------|-----------------|-----------------|-----------------|-----------------|------------------|
+| hasSkill | 200  | 0    | 100.6           | 0.01            | 0.00            | 0.00            | 100.5            |
++----------+------+------+-----------------+-----------------+-----------------+-----------------+------------------+
+
+2026.10.16-11:57:52.144[32m info [39m [caliper] [round-orchestrator] 	Finished round 2 (hasSkill) in 2.09 seconds
+2026.10.16-11:57:52.145[32m info [39m [caliper] [monitor.js] 	Stopping all monitors
+2026.10.16-11:57:52.145[32m info [39m [caliper] [round-orchestrator] 	Waiting 5 seconds for the next round...
+2026.10.16-11:57:57.152[32m info [39m [caliper] [round-orchestrator] 	Started round 3 (revoke)
+2026.10.16-11:57:57.153[32m info [39m [caliper] [worker-message-handler] 	Preparing Worker#0 for Round#2
+2026.10.16-11:57:57.156[32m info [39m [caliper] [caliper-worker] 	Info: worker 0 prepare test phase for round 2 is starting...
+2026.10.16-12:06:39.022[32m info [39m [caliper] [caliper-worker] 	Info: worker 0 prepare test phase for round 2 is completed
+2026.10.16-12:06:39.022[32m info [39m [caliper] [worker-message-handler] 	Worker#0 prepared for Round#2
+2026.10.16-12:06:39.022[32m info [39m [caliper] [worker-orchestrator] 	1 workers prepared, progressing to test phase.
+2026.10.16-12:06:39.023[32m info [39m [caliper] [round-orchestrator] 	Monitors successfully started
+2026.10.16-12:06:39.023[32m info [39m [caliper] [worker-message-handler] 	Worker#0 is starting Round#2
+2026.10.16-12:06:39.025[32m info [39m [caliper] [caliper-worker] 	Worker #0 starting workload loop
+2026.10.16-12:06:44.027[32m info [39m [caliper] [default-observer] 	[revoke Round 2 Transaction Info] - Submitted: 50 Succ: 0 Fail:0 Unfinished:50
+2026.10.16-12:06:49.028[32m info [39m [caliper] [default-observer] 	[revoke Round 2 Transaction Info] - Submitted: 50 Succ: 50 Fail:0 Unfinished:0
+2026.10.16-12:06:50.062[32m info [39m [caliper] [worker-message-handler] 	Worker#0 finished Round#2
+2026.10.16-12:06:55.066[32m info [39m [caliper] [default-observer] 	Resetting txCount indicator count
+2026.10.16-12:06:55.066[32m info [39m [caliper] [report-builder] 	### Test result ###
+2026.10.16-12:06:55.067[32m info [39m [caliper] [report-builder] 	
++--------+------+------+-----------------+-----------------+-----------------+-----------------+------------------+
+| Name   | Succ | Fail | Send Rate (TPS) | Max Latency (s) | Min Latency (s) | Avg Latency (s) | Throughput (TPS) |
+|--------|------|------|-----------------|-----------------|-----------------|-----------------|------------------|
+| revoke | 50   | 0    | 10.2            | 5.10            | 0.29            | 2.72            | 5.0              |
++--------+------+------+-----------------+-----------------+-----------------+-----------------+------------------+
+
+2026.10.16-12:06:55.067[32m info [39m [caliper] [round-orchestrator] 	Finished round 3 (revoke) in 10.036 seconds
+2026.10.16-12:06:55.067[32m info [39m [caliper] [monitor.js] 	Stopping all monitors
+2026.10.16-12:06:55.067[32m info [39m [caliper] [round-orchestrator] 	Waiting 5 seconds for the next round...
+2026.10.16-12:07:00.092[32m info [39m [caliper] [round-orchestrator] 	Started round 4 (createSkill)
+2026.10.16-12:07:00.093[32m info [39m [caliper] [worker-message-handler] 	Preparing Worker#0 for Round#3
+2026.10.16-12:07:00.096[32m info [39m [caliper] [caliper-worker] 	Info: worker 0 prepare test phase for round 3 is starting...
+2026.10.16-12:07:00.098[32m info [39m [caliper] [caliper-worker] 	Info: worker 0 prepare test phase for round 3 is completed
+2026.10.16-12:07:00.098[32m info [39m [caliper] [worker-message-handler] 	Worker#0 prepared for Round#3
+2026.10.16-12:07:00.098[32m info [39m [caliper] [worker-orchestrator] 	1 workers prepared, progressing to test phase.
+2026.10.16-12:07:00.098[32m info [39m [caliper] [round-orchestrator] 	Monitors successfully started
+2026.10.16-12:07:00.099[32m info [39m [caliper] [worker-message-handler] 	Worker#0 is starting Round#3
+2026.10.16-12:07:00.102[32m info [39m [caliper] [caliper-worker] 	Worker #0 starting workload loop
+2026.10.16-12:07:05.103[32m info [39m [caliper] [default-observer] 	[createSkill Round 3 Transaction Info] - Submitted: 40 Succ: 0 Fail:0 Unfinished:40
+2026.10.16-12:07:10.108[32m info [39m [caliper] [default-observer] 	[createSkill Round 3 Transaction Info] - Submitted: 50 Succ: 50 Fail:0 Unfinished:0
+2026.10.16-12:07:10.128[32m info [39m [caliper] [worker-message-handler] 	Worker#0 finished Round#3
+2026.10.16-12:07:15.133[32m info [39m [caliper] [default-observer] 	Resetting txCount indicator count
+2026.10.16-12:07:15.133[32m info [39m [caliper] [report-builder] 	### Test result ###
+2026.10.16-12:07:15.134[32m info [39m [caliper] [report-builder] 	
++-------------+------+------+-----------------+-----------------+-----------------+-----------------+------------------+
+| Name        | Succ | Fail | Send Rate (TPS) | Max Latency (s) | Min Latency (s) | Avg Latency (s) | Throughput (TPS) |
+|-------------|------|------|-----------------|-----------------|-----------------|-----------------|------------------|
+| createSkill | 50   | 0    | 10.2            | 5.05            | 0.26            | 2.68            | 5.6              |
++-------------+------+------+-----------------+-----------------+-----------------+-----------------+------------------+
+
+2026.10.16-12:07:15.134[32m info [39m [caliper] [round-orchestrator] 	Finished round 4 (createSkill) in 9.027 seconds
+2026.10.16-12:07:15.134[32m info [39m [caliper] [monitor.js] 	Stopping all monitors
+2026.10.16-12:07:15.134[32m info [39m [caliper] [round-orchestrator] 	Waiting 5 seconds for the next round...
+2026.10.16-12:07:20.159[32m info [39m [caliper] [round-orchestrator] 	Started round 5 (setSkillName)
+2026.10.16-12:07:20.160[32m info [39m [caliper] [worker-message-handler] 	Preparing Worker#0 for Round#4
+2026.10.16-12:07:20.164[32m info [39m [caliper] [caliper-worker] 	Info: worker 0 prepare test phase for round 4 is starting...
+2026.10.16-12:07:20.165[32m info [39m [caliper] [caliper-worker] 	Info: worker 0 prepare test phase for round 4 is completed
+2026.10.16-12:07:20.165[32m info [39m [caliper] [worker-message-handler] 	Worker#0 prepared for Round#4
+2026.10.16-12:07:20.166[32m info [39m [caliper] [worker-orchestrator] 	1 workers prepared, progressing to test phase.
+2026.10.16-12:07:20.166[32m info [39m [caliper] [round-orchestrator] 	Monitors successfully started
+2026.10.16-12:07:20.167[32m info [39m [caliper] [worker-message-handler] 	Worker#0 is starting Round#4
+2026.10.16-12:07:20.169[32m info [39m [caliper] [caliper-worker] 	Worker #0 starting workload loop
+2026.10.16-12:07:25.168[32m info [39m [caliper] [default-observer] 	[setSkillName Round 4 Transaction Info] - Submitted: 40 Succ: 39 Fail:0 Unfinished:1
+2026.10.16-12:07:30.095[32m info [39m [caliper] [worker-message-handler] 	Worker#0 finished Round#4
+2026.10.16-12:07:35.113[32m info [39m [caliper] [default-observer] 	Resetting txCount indicator count
+2026.10.16-12:07:35.113[32m info [39m [caliper] [report-builder] 	### Test result ###
+2026.10.16-12:07:35.113[32m info [39m [caliper] [report-builder] 	
++--------------+------+------+-----------------+-----------------+-----------------+-----------------+------------------+
+| Name         | Succ | Fail | Send Rate (TPS) | Max Latency (s) | Min Latency (s) | Avg Latency (s) | Throughput (TPS) |
+|--------------|------|------|-----------------|-----------------|-----------------|-----------------|------------------|
+| setSkillName | 50   | 0    | 10.2            | 4.95            | 0.09            | 2.53            | 5.6              |
++--------------+------+------+-----------------+-----------------+-----------------+-----------------+------------------+
+
+2026.10.16-12:07:35.114[32m info [39m [caliper] [round-orchestrator] 	Finished round 5 (setSkillName) in 8.926 seconds
+2026.10.16-12:07:35.114[32m info [39m [caliper] [monitor.js] 	Stopping all monitors
+2026.10.16-12:07:35.114[32m info [39m [caliper] [round-orchestrator] 	Waiting 5 seconds for the next round...
+2026.10.16-12:07:40.139[32m info [39m [caliper] [round-orchestrator] 	Started round 6 (setSkillBadgeURI)
+2026.10.16-12:07:40.140[32m info [39m [caliper] [worker-message-handler] 	Preparing Worker#0 for Round#5
+2026.10.16-12:07:40.143[32m info [39m [caliper] [caliper-worker] 	Info: worker 0 prepare test phase for round 5 is starting...
+2026.10.16-12:07:40.144[32m info [39m [caliper] [caliper-worker] 	Info: worker 0 prepare test phase for round 5 is completed
+2026.10.16-12:07:40.144[32m info [39m [caliper] [worker-message-handler] 	Worker#0 prepared for Round#5
+2026.10.16-12:07:40.145[32m info [39m [caliper] [worker-orchestrator] 	1 workers prepared, progressing to test phase.
+2026.10.16-12:07:40.145[32m info [39m [caliper] [round-orchestrator] 	Monitors successfully started
+2026.10.16-12:07:40.145[32m info [39m [caliper] [worker-message-handler] 	Worker#0 is starting Round#5
+2026.10.16-12:07:40.148[32m info [39m [caliper] [caliper-worker] 	Worker #0 starting workload loop
+2026.10.16-12:07:45.150[32m info [39m [caliper] [default-observer] 	[setSkillBadgeURI Round 5 Transaction Info] - Submitted: 50 Succ: 39 Fail:0 Unfinished:11
+2026.10.16-12:07:50.077[32m info [39m [caliper] [worker-message-handler] 	Worker#0 finished Round#5
+2026.10.16-12:07:55.083[32m info [39m [caliper] [default-observer] 	Resetting txCount indicator count
+2026.10.16-12:07:55.083[32m info [39m [caliper] [report-builder] 	### Test result ###
+2026.10.16-12:07:55.084[32m info [39m [caliper] [report-builder] 	
++------------------+------+------+-----------------+-----------------+-----------------+-----------------+------------------+
+| Name             | Succ | Fail | Send Rate (TPS) | Max Latency (s) | Min Latency (s) | Avg Latency (s) | Throughput (TPS) |
+|------------------|------|------|-----------------|-----------------|-----------------|-----------------|------------------|
+| setSkillBadgeURI | 50   | 0    | 10.2            | 4.99            | 0.13            | 2.57            | 5.6              |
++------------------+------+------+-----------------+-----------------+-----------------+-----------------+------------------+
+
+2026.10.16-12:07:55.084[32m info [39m [caliper] [round-orchestrator] 	Finished round 6 (setSkillBadgeURI) in 8.923 seconds
+2026.10.16-12:07:55.084[32m info [39m [caliper] [monitor.js] 	Stopping all monitors
+2026.10.16-12:07:55.084[32m info [39m [caliper] [round-orchestrator] 	Waiting 5 seconds for the next round...
+2026.10.16-12:08:00.110[32m info [39m [caliper] [round-orchestrator] 	Started round 7 (setSkillThreshold)
+2026.10.16-12:08:00.111[32m info [39m [caliper] [worker-message-handler] 	Preparing Worker#0 for Round#6
+2026.10.16-12:08:00.114[32m info [39m [caliper] [caliper-worker] 	Info: worker 0 prepare test phase for round 6 is starting...
+2026.10.16-12:08:00.116[32m info [39m [caliper] [caliper-worker] 	Info: worker 0 prepare test phase for round 6 is completed
+2026.10.16-12:08:00.116[32m info [39m [caliper] [worker-message-handler] 	Worker#0 prepared for Round#6
+2026.10.16-12:08:00.116[32m info [39m [caliper] [worker-orchestrator] 	1 workers prepared, progressing to test phase.
+2026.10.16-12:08:00.116[32m info [39m [caliper] [round-orchestrator] 	Monitors successfully started
+2026.10.16-12:08:00.117[32m info [39m [caliper] [worker-message-handler] 	Worker#0 is starting Round#6
+2026.10.16-12:08:00.119[32m info [39m [caliper] [caliper-worker] 	Worker #0 starting workload loop
+2026.10.16-12:08:05.122[32m info [39m [caliper] [default-observer] 	[setSkillThreshold Round 6 Transaction Info] - Submitted: 50 Succ: 39 Fail:0 Unfinished:11
+2026.10.16-12:08:10.127[32m info [39m [caliper] [default-observer] 	[setSkillThreshold Round 6 Transaction Info] - Submitted: 50 Succ: 50 Fail:0 Unfinished:0
+2026.10.16-12:08:14.022[32m info [39m [caliper] [worker-message-handler] 	Worker#0 finished Round#6
+2026.10.16-12:08:19.029[32m info [39m [caliper] [default-observer] 	Resetting txCount indicator count
+2026.10.16-12:08:19.029[32m info [39m [caliper] [report-builder] 	### Test result ###
+2026.10.16-12:08:19.029[32m info [39m [caliper] [report-builder] 	
++-------------------+------+------+-----------------+-----------------+-----------------+-----------------+------------------+
+| Name              | Succ | Fail | Send Rate (TPS) | Max Latency (s) | Min Latency (s) | Avg Latency (s) | Throughput (TPS) |
+|-------------------|------|------|-----------------|-----------------|-----------------|-----------------|------------------|
+| setSkillThreshold | 50   | 0    | 10.2            | 5.06            | 0.16            | 2.61            | 5.6              |
++-------------------+------+------+-----------------+-----------------+-----------------+-----------------+------------------+
+
+2026.10.16-12:08:19.030[32m info [39m [caliper] [round-orchestrator] 	Finished round 7 (setSkillThreshold) in 9.028 seconds
+2026.10.16-12:08:19.030[32m info [39m [caliper] [monitor.js] 	Stopping all monitors
+2026.10.16-12:08:19.030[32m info [39m [caliper] [round-orchestrator] 	Waiting 5 seconds for the next round...
+2026.10.16-12:08:24.054[32m info [39m [caliper] [round-orchestrator] 	Started round 8 (setIssuer)
+2026.10.16-12:08:24.056[32m info [39m [caliper] [worker-message-handler] 	Preparing Worker#0 for Round#7
+2026.10.16-12:08:24.058[32m info [39m [caliper] [caliper-worker] 	Info: worker 0 prepare test phase for round 7 is starting...
+2026.10.16-12:08:24.062[32m info [39m [caliper] [caliper-worker] 	Info: worker 0 prepare test phase for round 7 is completed
+2026.10.16-12:08:24.062[32m info [39m [caliper] [worker-message-handler] 	Worker#0 prepared for Round#7
+2026.10.16-12:08:24.062[32m info [39m [caliper] [worker-orchestrator] 	1 workers prepared, progressing to test phase.
+2026.10.16-12:08:24.062[32m info [39m [caliper] [round-orchestrator] 	Monitors successfully started
+2026.10.16-12:08:24.063[32m info [39m [caliper] [worker-message-handler] 	Worker#0 is starting Round#7
+2026.10.16-12:08:24.065[32m info [39m [caliper] [caliper-worker] 	Worker #0 starting workload loop
+2026.10.16-12:08:29.066[32m info [39m [caliper] [default-observer] 	[setIssuer Round 7 Transaction Info] - Submitted: 50 Succ: 7 Fail:0 Unfinished:43
+2026.10.16-12:08:30.167[32m info [39m [caliper] [worker-message-handler] 	Worker#0 finished Round#7
+2026.10.16-12:08:35.173[32m info [39m [caliper] [default-observer] 	Resetting txCount indicator count
+2026.10.16-12:08:35.174[32m info [39m [caliper] [report-builder] 	### Test result ###
+2026.10.16-12:08:35.174[32m info [39m [caliper] [report-builder] 	
++-----------+------+------+-----------------+-----------------+-----------------+-----------------+------------------+
+| Name      | Succ | Fail | Send Rate (TPS) | Max Latency (s) | Min Latency (s) | Avg Latency (s) | Throughput (TPS) |
+|-----------|------|------|-----------------|-----------------|-----------------|-----------------|------------------|
+| setIssuer | 50   | 0    | 10.2            | 5.00            | 0.11            | 2.55            | 10.0             |
++-----------+------+------+-----------------+-----------------+-----------------+-----------------+------------------+
+
+2026.10.16-12:08:35.174[32m info [39m [caliper] [round-orchestrator] 	Finished round 8 (setIssuer) in 5.102 seconds
+2026.10.16-12:08:35.174[32m info [39m [caliper] [monitor.js] 	Stopping all monitors
+2026.10.16-12:08:35.174[32m info [39m [caliper] [round-orchestrator] 	Waiting 5 seconds for the next round...
+2026.10.16-12:08:40.199[32m info [39m [caliper] [round-orchestrator] 	Started round 9 (skillId)
+2026.10.16-12:08:40.200[32m info [39m [caliper] [worker-message-handler] 	Preparing Worker#0 for Round#8
+2026.10.16-12:08:40.203[32m info [39m [caliper] [caliper-worker] 	Info: worker 0 prepare test phase for round 8 is starting...
+2026.10.16-12:08:40.204[32m info [39m [caliper] [caliper-worker] 	Info: worker 0 prepare test phase for round 8 is completed
+2026.10.16-12:08:40.204[32m info [39m [caliper] [worker-message-handler] 	Worker#0 prepared for Round#8
+2026.10.16-12:08:40.205[32m info [39m [caliper] [worker-orchestrator] 	1 workers prepared, progressing to test phase.
+2026.10.16-12:08:40.205[32m info [39m [caliper] [round-orchestrator] 	Monitors successfully started
+2026.10.16-12:08:40.206[32m info [39m [caliper] [worker-message-handler] 	Worker#0 is starting Round#8
+2026.10.16-12:08:40.209[32m info [39m [caliper] [caliper-worker] 	Worker #0 starting workload loop
+2026.10.16-12:08:43.301[32m info [39m [caliper] [worker-message-handler] 	Worker#0 finished Round#8
+2026.10.16-12:08:48.316[32m info [39m [caliper] [default-observer] 	Resetting txCount indicator count
+2026.10.16-12:08:48.317[32m info [39m [caliper] [report-builder] 	### Test result ###
+2026.10.16-12:08:48.317[32m info [39m [caliper] [report-builder] 	
++---------+------+------+-----------------+-----------------+-----------------+-----------------+------------------+
+| Name    | Succ | Fail | Send Rate (TPS) | Max Latency (s) | Min Latency (s) | Avg Latency (s) | Throughput (TPS) |
+|---------|------|------|-----------------|-----------------|-----------------|-----------------|------------------|
+| skillId | 200  | 0    | 100.6           | 0.01            | 0.00            | 0.00            | 100.5            |
++---------+------+------+-----------------+-----------------+-----------------+-----------------+------------------+
+
+2026.10.16-12:08:48.318[32m info [39m [caliper] [round-orchestrator] 	Finished round 9 (skillId) in 2.09 seconds
+2026.10.16-12:08:48.318[32m info [39m [caliper] [monitor.js] 	Stopping all monitors
+2026.10.16-12:08:48.318[32m info [39m [caliper] [round-orchestrator] 	Waiting 5 seconds for the next round...
+2026.10.16-12:08:53.336[32m info [39m [caliper] [round-orchestrator] 	Started round 10 (skillAttestationCount)
+2026.10.16-12:08:53.337[32m info [39m [caliper] [worker-message-handler] 	Preparing Worker#0 for Round#9
+2026.10.16-12:08:53.340[32m info [39m [caliper] [caliper-worker] 	Info: worker 0 prepare test phase for round 9 is starting...
+2026.10.16-12:08:59.020[32m info [39m [caliper] [caliper-worker] 	Info: worker 0 prepare test phase for round 9 is completed
+2026.10.16-12:08:59.020[32m info [39m [caliper] [worker-message-handler] 	Worker#0 prepared for Round#9
+2026.10.16-12:08:59.020[32m info [39m [caliper] [worker-orchestrator] 	1 workers prepared, progressing to test phase.
+2026.10.16-12:08:59.020[32m info [39m [caliper] [round-orchestrator] 	Monitors successfully started
+2026.10.16-12:08:59.021[32m info [39m [caliper] [worker-message-handler] 	Worker#0 is starting Round#9
+2026.10.16-12:08:59.023[32m info [39m [caliper] [caliper-worker] 	Worker #0 starting workload loop
+2026.10.16-12:09:02.115[32m info [39m [caliper] [worker-message-handler] 	Worker#0 finished Round#9
+2026.10.16-12:09:07.123[32m info [39m [caliper] [default-observer] 	Resetting txCount indicator count
+2026.10.16-12:09:07.124[32m info [39m [caliper] [report-builder] 	### Test result ###
+2026.10.16-12:09:07.124[32m info [39m [caliper] [report-builder] 	
++-----------------------+------+------+-----------------+-----------------+-----------------+-----------------+------------------+
+| Name                  | Succ | Fail | Send Rate (TPS) | Max Latency (s) | Min Latency (s) | Avg Latency (s) | Throughput (TPS) |
+|-----------------------|------|------|-----------------|-----------------|-----------------|-----------------|------------------|
+| skillAttestationCount | 200  | 0    | 100.6           | 0.00            | 0.00            | 0.00            | 100.5            |
++-----------------------+------+------+-----------------+-----------------+-----------------+-----------------+------------------+
+
+2026.10.16-12:09:07.124[32m info [39m [caliper] [round-orchestrator] 	Finished round 10 (skillAttestationCount) in 2.091 seconds
+2026.10.16-12:09:07.124[32m info [39m [caliper] [monitor.js] 	Stopping all monitors
+2026.10.16-12:09:07.124[32m info [39m [caliper] [round-orchestrator] 	Waiting 5 seconds for the next round...
+2026.10.16-12:09:12.150[32m info [39m [caliper] [round-orchestrator] 	Started round 11 (hasSkillFrom)
+2026.10.16-12:09:12.151[32m info [39m [caliper] [worker-message-handler] 	Preparing Worker#0 for Round#10
+2026.10.16-12:09:12.153[32m info [39m [caliper] [caliper-worker] 	Info: worker 0 prepare test phase for round 10 is starting...
+2026.10.16-12:09:19.024[32m info [39m [caliper] [caliper-worker] 	Info: worker 0 prepare test phase for round 10 is completed
+2026.10.16-12:09:19.024[32m info [39m [caliper] [worker-message-handler] 	Worker#0 prepared for Round#10
+2026.10.16-12:09:19.024[32m info [39m [caliper] [worker-orchestrator] 	1 workers prepared, progressing to test phase.
+2026.10.16-12:09:19.025[32m info [39m [caliper] [round-orchestrator] 	Monitors successfully started
+2026.10.16-12:09:19.025[32m info [39m [caliper] [worker-message-handler] 	Worker#0 is starting Round#10
+2026.10.16-12:09:19.027[32m info [39m [caliper] [caliper-worker] 	Worker #0 starting workload loop
+2026.10.16-12:09:22.119[32m info [39m [caliper] [worker-message-handler] 	Worker#0 finished Round#10
+2026.10.16-12:09:27.133[32m info [39m [caliper] [default-observer] 	Resetting txCount indicator count
+2026.10.16-12:09:27.133[32m info [39m [caliper] [report-builder] 	### Test result ###
+2026.10.16-12:09:27.133[32m info [39m [caliper] [report-builder] 	
++--------------+------+------+-----------------+-----------------+-----------------+-----------------+------------------+
+| Name         | Succ | Fail | Send Rate (TPS) | Max Latency (s) | Min Latency (s) | Avg Latency (s) | Throughput (TPS) |
+|--------------|------|------|-----------------|-----------------|-----------------|-----------------|------------------|
+| hasSkillFrom | 200  | 0    | 100.6           | 0.00            | 0.00            | 0.00            | 100.5            |
++--------------+------+------+-----------------+-----------------+-----------------+-----------------+------------------+
+
+2026.10.16-12:09:27.133[32m info [39m [caliper] [round-orchestrator] 	Finished round 11 (hasSkillFrom) in 2.091 seconds
+2026.10.16-12:09:27.133[32m info [39m [caliper] [monitor.js] 	Stopping all monitors
+2026.10.16-12:09:27.134[32m info [39m [caliper] [round-orchestrator] 	Waiting 5 seconds for the next round...
+2026.10.16-12:09:32.159[32m info [39m [caliper] [round-orchestrator] 	Started round 12 (getKnownSkillTypes)
+2026.10.16-12:09:32.160[32m info [39m [caliper] [worker-message-handler] 	Preparing Worker#0 for Round#11
+2026.10.16-12:09:32.163[32m info [39m [caliper] [caliper-worker] 	Info: worker 0 prepare test phase for round 11 is starting...
+2026.10.16-12:09:32.164[32m info [39m [caliper] [caliper-worker] 	Info: worker 0 prepare test phase for round 11 is completed
+2026.10.16-12:09:32.164[32m info [39m [caliper] [worker-message-handler] 	Worker#0 prepared for Round#11
+2026.10.16-12:09:32.165[32m info [39m [caliper] [worker-orchestrator] 	1 workers prepared, progressing to test phase.
+2026.10.16-12:09:32.165[32m info [39m [caliper] [round-orchestrator] 	Monitors successfully started
+2026.10.16-12:09:32.166[32m info [39m [caliper] [worker-message-handler] 	Worker#0 is starting Round#11
+2026.10.16-12:09:32.168[32m info [39m [caliper] [caliper-worker] 	Worker #0 starting workload loop
+2026.10.16-12:09:35.261[32m info [39m [caliper] [worker-message-handler] 	Worker#0 finished Round#11
+2026.10.16-12:09:40.276[32m info [39m [caliper] [default-observer] 	Resetting txCount indicator count
+2026.10.16-12:09:40.277[32m info [39m [caliper] [report-builder] 	### Test result ###
+2026.10.16-12:09:40.277[32m info [39m [caliper] [report-builder] 	
++--------------------+------+------+-----------------+-----------------+-----------------+-----------------+------------------+
+| Name               | Succ | Fail | Send Rate (TPS) | Max Latency (s) | Min Latency (s) | Avg Latency (s) | Throughput (TPS) |
+|--------------------|------|------|-----------------|-----------------|-----------------|-----------------|------------------|
+| getKnownSkillTypes | 200  | 0    | 100.6           | 0.01            | 0.00            | 0.00            | 100.4            |
++--------------------+------+------+-----------------+-----------------+-----------------+-----------------+------------------+
+
+2026.10.16-12:09:40.277[32m info [39m [caliper] [round-orchestrator] 	Finished round 12 (getKnownSkillTypes) in 2.092 seconds
+2026.10.16-12:09:40.277[32m info [39m [caliper] [monitor.js] 	Stopping all monitors
+2026.10.16-12:09:40.277[32m info [39m [caliper] [round-orchestrator] 	Waiting 5 seconds for the next round...
+2026.10.16-12:09:45.287[32m info [39m [caliper] [round-orchestrator] 	Started round 13 (getIssuersList)
+2026.10.16-12:09:45.288[32m info [39m [caliper] [worker-message-handler] 	Preparing Worker#0 for Round#12
+2026.10.16-12:09:45.290[32m info [39m [caliper] [caliper-worker] 	Info: worker 0 prepare test phase for round 12 is starting...
+2026.10.16-12:09:45.292[32m info [39m [caliper] [caliper-worker] 	Info: worker 0 prepare test phase for round 12 is completed
+2026.10.16-12:09:45.292[32m info [39m [caliper] [worker-message-handler] 	Worker#0 prepared for Round#12
+2026.10.16-12:09:45.292[32m info [39m [caliper] [worker-orchestrator] 	1 workers prepared, progressing to test phase.
+2026.10.16-12:09:45.292[32m info [39m [caliper] [round-orchestrator] 	Monitors successfully started
+2026.10.16-12:09:45.293[32m info [39m [caliper] [worker-message-handler] 	Worker#0 is starting Round#12
+2026.10.16-12:09:45.295[32m info [39m [caliper] [caliper-worker] 	Worker #0 starting workload loop
+2026.10.16-12:09:48.386[32m info [39m [caliper] [worker-message-handler] 	Worker#0 finished Round#12
+2026.10.16-12:09:53.397[32m info [39m [caliper] [default-observer] 	Resetting txCount indicator count
+2026.10.16-12:09:53.397[32m info [39m [caliper] [report-builder] 	### Test result ###
+2026.10.16-12:09:53.397[32m info [39m [caliper] [report-builder] 	
++----------------+------+------+-----------------+-----------------+-----------------+-----------------+------------------+
+| Name           | Succ | Fail | Send Rate (TPS) | Max Latency (s) | Min Latency (s) | Avg Latency (s) | Throughput (TPS) |
+|----------------|------|------|-----------------|-----------------|-----------------|-----------------|------------------|
+| getIssuersList | 200  | 0    | 100.6           | 0.00            | 0.00            | 0.00            | 100.5            |
++----------------+------+------+-----------------+-----------------+-----------------+-----------------+------------------+
+
+2026.10.16-12:09:53.397[32m info [39m [caliper] [round-orchestrator] 	Finished round 13 (getIssuersList) in 2.091 seconds
+2026.10.16-12:09:53.397[32m info [39m [caliper] [monitor.js] 	Stopping all monitors
+2026.10.16-12:09:53.397[32m info [39m [caliper] [round-orchestrator] 	Waiting 5 seconds for the next round...
+2026.10.16-12:09:58.423[32m info [39m [caliper] [round-orchestrator] 	Started round 14 (getters)
+2026.10.16-12:09:58.424[32m info [39m [caliper] [worker-message-handler] 	Preparing Worker#0 for Round#13
+2026.10.16-12:09:58.427[32m info [39m [caliper] [caliper-worker] 	Info: worker 0 prepare test phase for round 13 is starting...
+2026.10.16-12:09:58.429[32m info [39m [caliper] [caliper-worker] 	Info: worker 0 prepare test phase for round 13 is completed
+2026.10.16-12:09:58.429[32m info [39m [caliper] [worker-message-handler] 	Worker#0 prepared for Round#13
+2026.10.16-12:09:58.429[32m info [39m [caliper] [worker-orchestrator] 	1 workers prepared, progressing to test phase.
+2026.10.16-12:09:58.429[32m info [39m [caliper] [round-orchestrator] 	Monitors successfully started
+2026.10.16-12:09:58.430[32m info [39m [caliper] [worker-message-handler] 	Worker#0 is starting Round#13
+2026.10.16-12:09:58.433[32m info [39m [caliper] [caliper-worker] 	Worker #0 starting workload loop
+2026.10.16-12:10:01.527[32m info [39m [caliper] [worker-message-handler] 	Worker#0 finished Round#13
+2026.10.16-12:10:06.543[32m info [39m [caliper] [default-observer] 	Resetting txCount indicator count
+2026.10.16-12:10:06.543[32m info [39m [caliper] [report-builder] 	### Test result ###
+2026.10.16-12:10:06.544[32m info [39m [caliper] [report-builder] 	
++---------+------+------+-----------------+-----------------+-----------------+-----------------+------------------+
+| Name    | Succ | Fail | Send Rate (TPS) | Max Latency (s) | Min Latency (s) | Avg Latency (s) | Throughput (TPS) |
+|---------|------|------|-----------------|-----------------|-----------------|-----------------|------------------|
+| getters | 200  | 0    | 100.6           | 0.00            | 0.00            | 0.00            | 100.5            |
++---------+------+------+-----------------+-----------------+-----------------+-----------------+------------------+
+
+2026.10.16-12:10:06.544[32m info [39m [caliper] [round-orchestrator] 	Finished round 14 (getters) in 2.092 seconds
+2026.10.16-12:10:06.544[32m info [39m [caliper] [monitor.js] 	Stopping all monitors
+2026.10.16-12:10:06.544[32m info [39m [caliper] [round-orchestrator] 	Waiting 5 seconds for the next round...
+2026.10.16-12:10:11.563[32m info [39m [caliper] [round-orchestrator] 	Started round 15 (throughput)
+2026.10.16-12:10:11.564[32m info [39m [caliper] [worker-message-handler] 	Preparing Worker#0 for Round#14
+2026.10.16-12:10:11.574[32m info [39m [caliper] [caliper-worker] 	Info: worker 0 prepare test phase for round 14 is starting...
+2026.10.16-12:11:49.025[32m info [39m [caliper] [caliper-worker] 	Info: worker 0 prepare test phase for round 14 is completed
+2026.10.16-12:11:49.025[32m info [39m [caliper] [worker-message-handler] 	Worker#0 prepared for Round#14
+2026.10.16-12:11:49.025[32m info [39m [caliper] [worker-orchestrator] 	1 workers prepared, progressing to test phase.
+2026.10.16-12:11:49.025[32m info [39m [caliper] [round-orchestrator] 	Monitors successfully started
+2026.10.16-12:11:49.026[32m info [39m [caliper] [worker-message-handler] 	Worker#0 is starting Round#14
+2026.10.16-12:11:49.037[32m info [39m [caliper] [caliper-worker] 	Worker #0 starting workload loop
+2026.10.16-12:11:54.030[32m info [39m [caliper] [default-observer] 	[throughput Round 14 Transaction Info] - Submitted: 19 Succ: 0 Fail:0 Unfinished:19
+2026.10.16-12:11:59.034[32m info [39m [caliper] [default-observer] 	[throughput Round 14 Transaction Info] - Submitted: 25 Succ: 25 Fail:0 Unfinished:0
+2026.10.16-12:12:00.097[32m info [39m [caliper] [maxRate.js] 	End worker TPS 5
+2026.10.16-12:12:00.097[32m info [39m [caliper] [worker-message-handler] 	Worker#0 finished Round#14
+2026.10.16-12:12:05.103[32m info [39m [caliper] [default-observer] 	Resetting txCount indicator count
+2026.10.16-12:12:05.103[32m info [39m [caliper] [report-builder] 	### Test result ###
+2026.10.16-12:12:05.103[32m info [39m [caliper] [report-builder] 	
++------------+------+------+-----------------+-----------------+-----------------+-----------------+------------------+
+| Name       | Succ | Fail | Send Rate (TPS) | Max Latency (s) | Min Latency (s) | Avg Latency (s) | Throughput (TPS) |
+|------------|------|------|-----------------|-----------------|-----------------|-----------------|------------------|
+| throughput | 25   | 0    | 5.2             | 4.95            | 0.29            | 2.68            | 2.6              |
++------------+------+------+-----------------+-----------------+-----------------+-----------------+------------------+
+
+2026.10.16-12:12:05.103[32m info [39m [caliper] [round-orchestrator] 	Finished round 15 (throughput) in 10.068 seconds
+2026.10.16-12:12:05.104[32m info [39m [caliper] [monitor.js] 	Stopping all monitors
+2026.10.16-12:12:05.104[32m info [39m [caliper] [report-builder] 	### All test results ###
+2026.10.16-12:12:05.105[32m info [39m [caliper] [report-builder] 	
++-----------------------+------+------+-----------------+-----------------+-----------------+-----------------+------------------+
+| Name                  | Succ | Fail | Send Rate (TPS) | Max Latency (s) | Min Latency (s) | Avg Latency (s) | Throughput (TPS) |
+|-----------------------|------|------|-----------------|-----------------|-----------------|-----------------|------------------|
+| issueSkill            | 100  | 0    | 20.2            | 5.40            | 0.65            | 3.05            | 10.0             |
+|-----------------------|------|------|-----------------|-----------------|-----------------|-----------------|------------------|
+| hasSkill              | 200  | 0    | 100.6           | 0.01            | 0.00            | 0.00            | 100.5            |
+|-----------------------|------|------|-----------------|-----------------|-----------------|-----------------|------------------|
+| revoke                | 50   | 0    | 10.2            | 5.10            | 0.29            | 2.72            | 5.0              |
+|-----------------------|------|------|-----------------|-----------------|-----------------|-----------------|------------------|
+| createSkill           | 50   | 0    | 10.2            | 5.05            | 0.26            | 2.68            | 5.6              |
+|-----------------------|------|------|-----------------|-----------------|-----------------|-----------------|------------------|
+| setSkillName          | 50   | 0    | 10.2            | 4.95            | 0.09            | 2.53            | 5.6              |
+|-----------------------|------|------|-----------------|-----------------|-----------------|-----------------|------------------|
+| setSkillBadgeURI      | 50   | 0    | 10.2            | 4.99            | 0.13            | 2.57            | 5.6              |
+|-----------------------|------|------|-----------------|-----------------|-----------------|-----------------|------------------|
+| setSkillThreshold     | 50   | 0    | 10.2            | 5.06            | 0.16            | 2.61            | 5.6              |
+|-----------------------|------|------|-----------------|-----------------|-----------------|-----------------|------------------|
+| setIssuer             | 50   | 0    | 10.2            | 5.00            | 0.11            | 2.55            | 10.0             |
+|-----------------------|------|------|-----------------|-----------------|-----------------|-----------------|------------------|
+| skillId               | 200  | 0    | 100.6           | 0.01            | 0.00            | 0.00            | 100.5            |
+|-----------------------|------|------|-----------------|-----------------|-----------------|-----------------|------------------|
+| skillAttestationCount | 200  | 0    | 100.6           | 0.00            | 0.00            | 0.00            | 100.5            |
+|-----------------------|------|------|-----------------|-----------------|-----------------|-----------------|------------------|
+| hasSkillFrom          | 200  | 0    | 100.6           | 0.00            | 0.00            | 0.00            | 100.5            |
+|-----------------------|------|------|-----------------|-----------------|-----------------|-----------------|------------------|
+| getKnownSkillTypes    | 200  | 0    | 100.6           | 0.01            | 0.00            | 0.00            | 100.4            |
+|-----------------------|------|------|-----------------|-----------------|-----------------|-----------------|------------------|
+| getIssuersList        | 200  | 0    | 100.6           | 0.00            | 0.00            | 0.00            | 100.5            |
+|-----------------------|------|------|-----------------|-----------------|-----------------|-----------------|------------------|
+| getters               | 200  | 0    | 100.6           | 0.00            | 0.00            | 0.00            | 100.5            |
+|-----------------------|------|------|-----------------|-----------------|-----------------|-----------------|------------------|
+| throughput            | 25   | 0    | 5.2             | 4.95            | 0.29            | 2.68            | 2.6              |
++-----------------------+------+------+-----------------+-----------------+-----------------+-----------------+------------------+
+
+2026.10.16-12:12:05.120[32m info [39m [caliper] [report-builder] 	Generated report with path /home/nevesrs/Codes/eduvalida-poc/report.html
+2026.10.16-12:12:05.120[32m info [39m [caliper] [monitor.js] 	Stopping all monitors
+2026.10.16-12:12:05.120[32m info [39m [caliper] [worker-orchestrator] 	Sending exit message to connected workers
+2026.10.16-12:12:05.120[32m info [39m [caliper] [round-orchestrator] 	Benchmark finished in 1035.331 seconds. Total rounds: 15. Successful rounds: 15. Failed rounds: 0.
+2026.10.16-12:12:05.120[32m info [39m [caliper] [caliper-engine] 	Network configuration attribute "caliper.command.end" is not present, skipping end command
+2026.10.16-12:12:05.120[32m info [39m [caliper] [cli-launch-manager] 	Benchmark successfully finished!
+2026.10.16-12:12:05.121[32m info [39m [caliper] [worker-message-handler] 	Worker#0 is exiting

@@ -5,3 +5,4 @@ typechain-types/
 deployed-addresses.json
 dist/
 .env
+wallet-server/data/

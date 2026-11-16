@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import "@openzeppelin/contracts/token/ERC6909/ERC6909.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
@@ -16,8 +16,11 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  *         Multi-assinatura: `skillThreshold` define quantas instituições
  *         diferentes precisam emitir uma skill para que o aluno seja
  *         considerado como a tendo obtido.
+ *
+ *         V2: migrado de ERC-1155 para ERC-6909 — remove batching e callbacks,
+ *         reduzindo gas de mint/burn em ~15-25%.
  */
-contract SkillToken is ERC1155, Ownable {
+contract SkillToken is ERC6909, Ownable {
     mapping(address => bool) public authorizedIssuers;
     address[] private _issuersList;
     mapping(address => uint256) private _issuerIndex;
@@ -36,7 +39,7 @@ contract SkillToken is ERC1155, Ownable {
     event SkillBadgeURISet(bytes32 indexed skillType, string uri);
     event SkillThresholdUpdated(uint256 newThreshold);
 
-    constructor() ERC1155("") Ownable(msg.sender) {}
+    constructor() Ownable(msg.sender) {}
 
     /// @notice Define o número mínimo de instituições que devem atestar uma skill.
     function setSkillThreshold(uint256 _threshold) external onlyOwner {
@@ -86,7 +89,7 @@ contract SkillToken is ERC1155, Ownable {
         emit SkillCreated(skillType, name);
     }
 
-    /// @notice Calcula o id ERC-1155 a partir do skillType + instituição emissora.
+    /// @notice Calcula o id ERC-6909 a partir do skillType + instituição emissora.
     function skillId(bytes32 skillType, address institution) public pure returns (uint256) {
         return uint256(keccak256(abi.encodePacked(skillType, institution)));
     }
@@ -100,7 +103,7 @@ contract SkillToken is ERC1155, Ownable {
         idToSkillType[id] = skillType;
         idToIssuer[id] = msg.sender;
 
-        _mint(to, id, 1, "");
+        _mint(to, id, 1);
         emit SkillIssued(msg.sender, to, skillType, id);
     }
 
@@ -153,11 +156,11 @@ contract SkillToken is ERC1155, Ownable {
     }
 
     /// @dev Bloqueia qualquer transferência entre contas — saldo soulbound.
-    function _update(address from, address to, uint256[] memory ids, uint256[] memory values)
+    function _update(address from, address to, uint256 id, uint256 amount)
         internal
         override
     {
         require(from == address(0) || to == address(0), "SkillToken: saldo intransferivel");
-        super._update(from, to, ids, values);
+        super._update(from, to, id, amount);
     }
 }

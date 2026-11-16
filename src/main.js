@@ -30,15 +30,16 @@ const SKILL_TOKEN_ABI = [
 ];
 
 const CERT_EMITTER_ABI = [
-  "function certificateTypes(uint256) view returns (string name, bool exists)",
+  // Obs: o getter automático do struct público omite o campo bytes32[] — use getRequiredSkills().
+  "function certificateTypes(uint256) view returns (string name, uint8 burnAuth, bool exists)",
   "function certificateBadgeURI(uint256) view returns (string)",
   "function getRequiredSkills(uint256 certTypeId) view returns (bytes32[])",
   "function getRequiredSigners(uint256 certTypeId) view returns (address[])",
   "function missingSkills(address student, uint256 certTypeId) view returns (bytes32[])",
   "function missingSigners(address student, uint256 certTypeId) view returns (address[])",
   "function allSignersSigned(address student, uint256 certTypeId) view returns (bool)",
-  "function claimCertificate(uint256 certTypeId) returns (uint256)",
-  "function createCertificateType(string name, bytes32[] requiredSkills) returns (uint256)",
+  "function issueCertificate(uint256 certTypeId, address student, bytes consentSignature) returns (uint256)",
+  "function createCertificateType(string name, bytes32[] requiredSkills, uint8 burnAuth) returns (uint256)",
   "function setCertificateBadgeURI(uint256 certTypeId, string uri)",
   "function setRequiredSigners(uint256 certTypeId, address[] signers)",
   "function owner() view returns (address)",
@@ -46,15 +47,130 @@ const CERT_EMITTER_ABI = [
   "function getCertTypeIds() view returns (uint256[])",
   "function hasClaimed(address student, uint256 certTypeId) view returns (bool)",
   "function studentTokenId(address student, uint256 certTypeId) view returns (uint256)",
+  "function tokenIssuer(uint256 tokenId) view returns (address)",
+  "function burnAuth(uint256 tokenId) view returns (uint8)",
   "function revokeCertificate(uint256 tokenId)",
   "function deleteCertificateType(uint256 certTypeId)",
   "event CertificateTypeCreated(uint256 indexed certTypeId, string name)",
-  "event CertificateClaimed(address indexed student, uint256 indexed certTypeId, uint256 tokenId)",
+  "event CertificateIssued(address indexed issuer, address indexed student, uint256 indexed certTypeId, uint256 tokenId, uint8 burnAuth)",
   "event CertificateBadgeURISet(uint256 indexed certTypeId, string uri)",
   "event RequiredSignersSet(uint256 indexed certTypeId, address[] signers)",
 ];
 
+const BURN_AUTH_NAMES = ["IssuerOnly", "OwnerOnly", "Both", "Neither"];
+
 const provider = new ethers.JsonRpcProvider(RPC_URL);
+
+const WALLET_API = "/wallet-api";
+let walletAuth = null; // { token, user, wallet } do módulo 1:1 (wallet-server)
+try { walletAuth = JSON.parse(localStorage.getItem("eduvalida_wallet_auth") || "null"); } catch {}
+
+const whoCache = new Map();
+async function whoIs(addr) {
+  const key = String(addr).toLowerCase();
+  if (!whoCache.has(key)) {
+    let label = shortAddr(key);
+    try {
+      const res = await fetch(`${WALLET_API}/chain/who/${key}`);
+      const data = await res.json();
+      if (data.registered) label = `${data.username || "on-chain"} (${shortAddr(key)})`;
+    } catch {}
+    whoCache.set(key, label);
+  }
+  return whoCache.get(key);
+}
+
+async function walletIssueSkill(student, skillType) {
+  const res = await fetch(`${WALLET_API}/chain/issue-skill`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${walletAuth.token}` },
+    body: JSON.stringify({ student, skillType }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "falha na emissão autenticada");
+  return data;
+}
+
+async function walletConsent(certTypeId, issuer) {
+  const res = await fetch(`${WALLET_API}/sign/consent`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${walletAuth.token}` },
+    body: JSON.stringify({ certTypeId, issuer }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "falha ao assinar consentimento");
+  return data;
+}
+
+async function walletIssueCert(certTypeId, student, consentSignature) {
+  const res = await fetch(`${WALLET_API}/chain/issue-cert`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${walletAuth.token}` },
+    body: JSON.stringify({ certTypeId, student, consentSignature }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "falha na emissão consensual autenticada");
+  return data;
+}
+
+// Digest do consentimento EIP-5484 (mesmos bytes do abi.encodePacked on-chain)
+function consentDigest(certTypeId, student, issuer) {
+  return ethers.keccak256(
+    ethers.solidityPacked(
+      ["string", "uint256", "address", "address"],
+      ["EduValidaConsent:", certTypeId, student, issuer]
+    )
+  );
+}
+
+async function renderAuthStatus() {
+  const instStatus = document.getElementById("inst-auth-status");
+  const stuStatus = document.getElementById("stu-auth-status");
+  const instLogin = document.getElementById("inst-wallet-login");
+  const stuLogin = document.getElementById("stu-wallet-login");
+  const instActions = document.getElementById("inst-auth-actions");
+  const stuActions = document.getElementById("stu-auth-actions");
+  const label = walletAuth
+    ? `Autenticado: ${walletAuth.user.username} — carteira ${shortAddr(walletAuth.wallet.address)} (vínculo 1:1 via WalletRegistry)`
+    : "Não autenticado — emissões usarão a carteira demo embutida (sem vínculo no WalletRegistry).";
+  instStatus.textContent = label;
+  stuStatus.textContent = walletAuth
+    ? `Autenticado: ${walletAuth.user.username} — carteira ${shortAddr(walletAuth.wallet.address)}`
+    : "Não autenticado — reivindicações usarão a carteira demo embutida.";
+  instLogin.style.display = walletAuth ? "none" : "";
+  stuLogin.style.display = walletAuth ? "none" : "";
+  instActions.style.display = walletAuth ? "flex" : "none";
+  stuActions.style.display = walletAuth ? "flex" : "none";
+  await loadIssuerStatus();
+}
+
+async function walletLogin(prefix) {
+  const username = document.getElementById(`${prefix}-wallet-user`).value.trim();
+  const password = document.getElementById(`${prefix}-wallet-pass`).value;
+  try {
+    const res = await fetch(`${WALLET_API}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || res.statusText);
+    walletAuth = { token: data.token, user: data.user, wallet: data.wallet };
+    localStorage.setItem("eduvalida_wallet_auth", JSON.stringify(walletAuth));
+    whoCache.clear();
+    log(`Carteira autenticada: ${username} -> ${shortAddr(walletAuth.wallet.address)}`, "success");
+    await renderAuthStatus();
+  } catch (err) {
+    log(`Erro no login 1:1: ${err.message}`, "error");
+  }
+}
+
+function walletLogout() {
+  walletAuth = null;
+  localStorage.removeItem("eduvalida_wallet_auth");
+  log("Sessão 1:1 encerrada.");
+  renderAuthStatus();
+}
 
 const wallets = {
   deployer: new ethers.Wallet(DEPLOYER_KEY, provider),
@@ -132,6 +248,7 @@ function switchView(role) {
     renderSkillSelect();
     renderInstCertTypes();
     renderRevokeCertSelect();
+    renderConsentIssueCertSelect();
     loadThreshold();
   } else {
     refreshSkills();
@@ -257,7 +374,7 @@ async function renderSignersCheckboxes() {
   let html = "";
   for (const addr of issuers) {
     const checked = currentSigners.includes(addr.toLowerCase()) ? "checked" : "";
-    html += `<label><input type="checkbox" value="${addr}" ${checked} /> ${shortAddr(addr)}</label>`;
+    html += `<label><input type="checkbox" value="${addr}" ${checked} /> ${await whoIs(addr)}</label>`;
   }
   container.innerHTML = html;
 }
@@ -285,6 +402,109 @@ async function setThreshold(e) {
     log(`Erro: ${err.reason || err.message}`, "error");
   }
 }
+
+async function checkSignatures(e) {
+  e.preventDefault();
+  const studentAddr = document.getElementById("sign-student-addr").value.trim();
+  if (!studentAddr) return;
+
+  const container = document.getElementById("sign-cert-list");
+  container.innerHTML = "<em>Verificando pendências...</em>";
+
+  const currentAddr = wallets[currentRole].address.toLowerCase();
+  let html = "";
+  let found = false;
+
+  for (const [id, info] of knownCertTypes) {
+    try {
+      const requiredSigners = (await certEmitter.getRequiredSigners(id)).map((s) => s.toLowerCase());
+      if (!requiredSigners.includes(currentAddr)) continue;
+
+      const requiredSkills = await certEmitter.getRequiredSkills(id);
+      const missing = [];
+      for (const hash of requiredSkills) {
+        try {
+          const has = await skillToken.hasSkillFrom(wallets[currentRole].address, studentAddr, hash);
+          if (!has) missing.push(hash);
+        } catch {
+          missing.push(hash);
+        }
+      }
+
+      found = true;
+      const signed = missing.length === 0;
+
+      html += `<div class="cert-item">`;
+      html += `<div class="cert-name">${info.name} (id: ${id})</div>`;
+      if (signed) {
+        html += `<div class="cert-status complete">✓ Assinado — todas as skills emitidas</div>`;
+      } else {
+        const missingNames = missing.map((h) => knownSkills.get(h) || h.slice(0, 10) + "...");
+        html += `<div class="cert-status pending-sign">⏳ Pendente — falta emitir: ${missingNames.join(", ")}</div>`;
+      }
+      html += `</div>`;
+    } catch {}
+  }
+
+  container.innerHTML = found
+    ? html
+    : "<em>Você não é signatário obrigatório de nenhum certificado.</em>";
+}
+
+async function signCertificate(certTypeId, studentAddr) {
+  const wallet = wallets[currentRole];
+  const contract = skillToken.connect(wallet);
+  const info = knownCertTypes.get(certTypeId);
+  const certName = info ? info.name : certTypeId;
+
+  const requiredSkills = await certEmitter.getRequiredSkills(certTypeId);
+  const missing = [];
+  for (const hash of requiredSkills) {
+    try {
+      const has = await skillToken.hasSkillFrom(wallet.address, studentAddr, hash);
+      if (!has) missing.push(hash);
+    } catch {
+      missing.push(hash);
+    }
+  }
+
+  if (missing.length === 0) {
+    log("Todas as skills já foram emitidas para este certificado.", "info");
+    return;
+  }
+
+  log(`Assinando certificado "${certName}" — emitindo ${missing.length} skill(s) para ${shortAddr(studentAddr)}...`);
+
+  let ok = 0;
+  for (const hash of missing) {
+    const skillName = knownSkills.get(hash) || hash;
+    try {
+      if (walletAuth) {
+        const data = await walletIssueSkill(studentAddr, hash);
+        log(`TX autenticada 1:1: ${data.txHash}`, "info");
+      } else {
+        const tx = await contract.issueSkill(studentAddr, hash);
+        log(`TX enviada: ${tx.hash}`, "info");
+        await tx.wait();
+      }
+      log(`Skill "${skillName}" emitida.`, "success");
+      ok++;
+    } catch (err) {
+      log(`Erro ao emitir "${skillName}": ${err.reason || err.message}`, "error");
+    }
+  }
+
+  if (ok === missing.length) {
+    log(`Certificado "${certName}" assinado com sucesso!`, "success");
+  } else {
+    log(`Parcial: ${ok}/${missing.length} skills emitidas.`, "error");
+  }
+
+  // re-verificar pendências
+  document.getElementById("sign-cert-form").dispatchEvent(new Event("submit"));
+}
+
+window.signCertificate = signCertificate;
 
 async function setSigners(e) {
   e.preventDefault();
@@ -376,12 +596,19 @@ async function IssueSkill(e) {
   if (!studentAddr || !skillType) return;
 
   const skillName = knownSkills.get(skillType) || skillType;
-  const signer = wallets[currentRole];
-  const contract = skillToken.connect(signer);
 
   log(`Emitindo skill "${skillName}" para ${shortAddr(studentAddr)}...`);
 
   try {
+    if (walletAuth) {
+      const data = await walletIssueSkill(studentAddr, skillType);
+      log(`TX autenticada 1:1: ${data.txHash}`, "info");
+      log(`Skill "${skillName}" emitida por ${shortAddr(data.issuer)} (vínculo on-chain via WalletRegistry).`, "success");
+      e.target.reset();
+      return;
+    }
+    const signer = wallets[currentRole];
+    const contract = skillToken.connect(signer);
     const tx = await contract.issueSkill(studentAddr, skillType);
     log(`TX enviada: ${tx.hash}`, "info");
     const receipt = await tx.wait();
@@ -413,14 +640,15 @@ async function createCertType(e) {
     log("Selecione ao menos uma skill.", "error");
     return;
   }
+  const burnAuth = Number(document.getElementById("cert-burn-auth").value);
 
   const signer = wallets.institution;
   const contract = certEmitter.connect(signer);
 
-  log(`Criando tipo de certificado "${certName}" com ${skillTypes.length} skill(s)...`);
+  log(`Criando tipo de certificado "${certName}" com ${skillTypes.length} skill(s), BurnAuth=${BURN_AUTH_NAMES[burnAuth]}...`);
 
   try {
-    const tx = await contract.createCertificateType(certName, skillTypes);
+    const tx = await contract.createCertificateType(certName, skillTypes, burnAuth);
     log(`TX enviada: ${tx.hash}`, "info");
     const receipt = await tx.wait();
 
@@ -430,7 +658,7 @@ async function createCertType(e) {
         const parsed = certEmitter.interface.parseLog(logItem);
         if (parsed.name === "CertificateTypeCreated") {
           const certTypeId = parsed.args.certTypeId;
-          knownCertTypes.set(Number(certTypeId), { name: certName, skills: skillNames });
+          knownCertTypes.set(Number(certTypeId), { name: certName, skills: skillNames, burnAuth });
           log(`CertificateTypeCreated: id=${certTypeId}`, "success");
         }
       } catch {}
@@ -486,7 +714,14 @@ async function refreshSkills() {
       }
 
       const countHtml = `<span class="attest-count">${count}/${threshold} assinaturas</span>`;
-      item.innerHTML = `<span class="skill-name">${name}</span>${countHtml}${badgeHtml}`;
+      let attestNamesHtml = "";
+      try {
+        const res = await fetch(`${WALLET_API}/chain/attestations/${signer.address}/${hash}`);
+        const data = await res.json();
+        const names = (data.attestations || []).map((a) => a.username || shortAddr(a.issuer));
+        if (names.length) attestNamesHtml = `<div class="cert-status" style="font-size:0.7rem">atestado por: ${names.join(", ")}</div>`;
+      } catch {}
+      item.innerHTML = `<span class="skill-name">${name}</span>${countHtml}${attestNamesHtml}${badgeHtml}`;
     } catch {
       item.classList.add("pending");
       item.innerHTML = `<span class="skill-name">${name}</span><span class="badge available">Erro</span>`;
@@ -542,7 +777,7 @@ async function refreshCertTypes() {
             const isMissing = missingSigs.map((s) => s.toLowerCase()).includes(sig.toLowerCase());
             const icon = isMissing ? "⏳" : "✓";
             const cls = isMissing ? "signer-pending" : "signer-ok";
-            signerHtml += `<span class="${cls}">${icon} ${shortAddr(sig)}</span> `;
+            signerHtml += `<span class="${cls}">${icon} ${await whoIs(sig)}</span> `;
           }
           signerHtml += `</div>`;
         }
@@ -564,7 +799,7 @@ async function refreshCertTypes() {
         }
       }
 
-      html += `<button onclick="claimCert(${id})">Reivindicar</button>`;
+      html += `<button onclick="consentCert(${id})">Assinar consentimento (Instituição 1)</button>`;
       html += `</div>`;
     } catch (err) {
       html += `<div class="cert-item"><div class="cert-name">${info.name}</div><div class="cert-status">Erro ao verificar</div></div>`;
@@ -574,35 +809,82 @@ async function refreshCertTypes() {
   container.innerHTML = html || "<em>Nenhum certificado encontrado.</em>";
 }
 
-async function claimCert(certTypeId) {
-  const signer = wallets.student;
-  const contract = certEmitter.connect(signer);
-
-  log(`Reivindicando certificado id=${certTypeId}...`);
+// Aluno assina o CONSENTIMENTO EIP-5484 de receber o certificado da Instituição 1.
+// A assinatura é salva e aparece automaticamente no formulário da instituição.
+async function consentCert(certTypeId) {
+  const issuer = wallets.institution.address;
+  log(`Assinando consentimento EIP-5484 para certificado id=${certTypeId} (emissor: Instituição 1)...`);
 
   try {
-    const tx = await contract.claimCertificate(certTypeId);
+    let signature;
+    let student;
+    if (walletAuth) {
+      const data = await walletConsent(certTypeId, issuer);
+      signature = data.signature;
+      student = data.student;
+      log(`Consentimento assinado pela carteira autenticada ${shortAddr(data.student)} (digest ${shortAddr(data.digest)})`, "info");
+    } else {
+      student = wallets.student.address;
+      const digest = consentDigest(certTypeId, student, issuer);
+      signature = await wallets.student.signMessage(ethers.getBytes(digest));
+      log(`Consentimento assinado pela carteira demo ${shortAddr(student)}`, "info");
+    }
+
+    localStorage.setItem(
+      `eduvalida_consent_${certTypeId}`,
+      JSON.stringify({ certTypeId, student, issuer, signature })
+    );
+    document.getElementById("consent-issue-cert-select").value = String(certTypeId);
+    document.getElementById("consent-issue-student-addr").value = student;
+    document.getElementById("consent-issue-signature").value = signature;
+    log(`Consentimento do certificado #${certTypeId} assinado — a instituição já pode emitir (EIP-5484 consensual).`, "success");
+  } catch (err) {
+    log(`Erro: ${err.reason || err.message}`, "error");
+  }
+}
+
+window.consentCert = consentCert;
+
+// Instituição emite o certificado consensual ao aluno (validação on-chain do consentimento)
+async function issueConsentCert(e) {
+  e.preventDefault();
+  const certTypeId = Number(document.getElementById("consent-issue-cert-select").value);
+  const studentAddr = document.getElementById("consent-issue-student-addr").value.trim();
+  const consentSignature = document.getElementById("consent-issue-signature").value.trim();
+  if (!certTypeId || !studentAddr || !consentSignature) return;
+
+  const info = knownCertTypes.get(certTypeId);
+  log(`Emitindo certificado consensual "${info?.name || certTypeId}" para ${shortAddr(studentAddr)}...`);
+
+  try {
+    if (walletAuth) {
+      const data = await walletIssueCert(certTypeId, studentAddr, consentSignature);
+      log(`TX autenticada 1:1: ${data.txHash}`, "info");
+      log(`CertificateIssued: tokenId=${data.tokenId}, BurnAuth=${BURN_AUTH_NAMES[data.burnAuth]}`, "success");
+      e.target.reset();
+      return;
+    }
+    const signer = wallets.institution;
+    const contract = certEmitter.connect(signer);
+    const tx = await contract.issueCertificate(certTypeId, studentAddr, consentSignature);
     log(`TX enviada: ${tx.hash}`, "info");
     const receipt = await tx.wait();
 
     for (const logItem of receipt.logs) {
       try {
         const parsed = certEmitter.interface.parseLog(logItem);
-        if (parsed.name === "CertificateClaimed") {
-          log(`CertificateClaimed: tokenId=${parsed.args.tokenId}`, "success");
+        if (parsed.name === "CertificateIssued") {
+          log(`CertificateIssued: tokenId=${parsed.args.tokenId}, BurnAuth=${BURN_AUTH_NAMES[Number(parsed.args.burnAuth)]}`, "success");
         }
       } catch {}
     }
 
-    log(`Certificado reivindicado com sucesso!`, "success");
-    refreshCertTypes();
-    refreshClaimedCerts();
+    log(`Certificado consensual emitido com sucesso!`, "success");
+    e.target.reset();
   } catch (err) {
     log(`Erro: ${err.reason || err.message}`, "error");
   }
 }
-
-window.claimCert = claimCert;
 
 async function refreshClaimedCerts() {
   const container = document.getElementById("claimed-certs-list");
@@ -628,9 +910,16 @@ async function refreshClaimedCerts() {
           const badgeUri = await certEmitter.certificateBadgeURI(id);
           if (badgeUri) badgeHtml = `<a href="${badgeUri}" target="_blank" class="badge-link" title="Open Badge">🏅 Badge</a>`;
         } catch {}
+        let burnHtml = "";
+        try {
+          const tokenId = await contract.studentTokenId(signer.address, id);
+          const ba = Number(await contract.burnAuth(tokenId));
+          burnHtml = `<div class="cert-status">BurnAuth: ${BURN_AUTH_NAMES[ba]}</div>`;
+        } catch {}
         html += `<div class="cert-item claimed">`;
         html += `<div class="cert-name">${info.name} ${badgeHtml}</div>`;
-        html += `<div class="cert-status complete">Reivindicado</div>`;
+        html += `<div class="cert-status complete">Emitido (consensual)</div>`;
+        html += burnHtml;
         html += `</div>`;
       }
     } catch {
@@ -638,7 +927,7 @@ async function refreshClaimedCerts() {
     }
   }
 
-  container.innerHTML = found ? html : "<em>Nenhum certificado reivindicado ainda.</em>";
+  container.innerHTML = found ? html : "<em>Nenhum certificado emitido ainda.</em>";
 }
 
 function renderRevokeCertSelect() {
@@ -650,6 +939,31 @@ function renderRevokeCertSelect() {
     opt.textContent = `${info.name} (id: ${id})`;
     select.appendChild(opt);
   }
+}
+
+function renderConsentIssueCertSelect() {
+  const select = document.getElementById("consent-issue-cert-select");
+  select.innerHTML = '<option value="">Selecione...</option>';
+  for (const [id, info] of knownCertTypes) {
+    const opt = document.createElement("option");
+    opt.value = id;
+    opt.textContent = `${info.name} (id: ${id})`;
+    select.appendChild(opt);
+  }
+  // auto-preenche com o consentimento assinado pelo aluno, se houver
+  for (const [id] of knownCertTypes) {
+    const consent = readConsent(id);
+    if (consent) {
+      select.value = String(id);
+      document.getElementById("consent-issue-student-addr").value = consent.student;
+      document.getElementById("consent-issue-signature").value = consent.signature;
+      break;
+    }
+  }
+}
+
+function readConsent(certTypeId) {
+  try { return JSON.parse(localStorage.getItem(`eduvalida_consent_${certTypeId}`) || "null"); } catch { return null; }
 }
 
 async function revokeCert(e) {
@@ -760,7 +1074,7 @@ async function loadFromChain() {
             for (const hash of requiredSkills) {
               skillNames.push(knownSkills.get(hash) || hash);
             }
-            knownCertTypes.set(certTypeId, { name: cert.name, skills: skillNames });
+            knownCertTypes.set(certTypeId, { name: cert.name, skills: skillNames, burnAuth: Number(cert.burnAuth) });
           }
         } catch (err) {
           console.error(`Erro ao carregar cert tipo ${certTypeId}:`, err);
@@ -792,6 +1106,13 @@ document.getElementById("set-skill-badge-form").addEventListener("submit", setSk
 document.getElementById("set-cert-badge-form").addEventListener("submit", setCertBadgeURI);
 document.getElementById("set-threshold-form").addEventListener("submit", setThreshold);
 document.getElementById("set-signers-form").addEventListener("submit", setSigners);
+document.getElementById("sign-cert-form").addEventListener("submit", checkSignatures);
+document.getElementById("refresh-sign-certs").addEventListener("click", () => {
+  const form = document.getElementById("sign-cert-form");
+  if (document.getElementById("sign-student-addr").value.trim()) {
+    form.dispatchEvent(new Event("submit"));
+  }
+});
 document.getElementById("signers-cert-select").addEventListener("change", renderSignersCheckboxes);
 document.getElementById("refresh-cert-types").addEventListener("click", refreshCertTypes);
 document.getElementById("refresh-claimed").addEventListener("click", refreshClaimedCerts);
@@ -802,7 +1123,31 @@ document.querySelector('[data-copy="student-address"]').addEventListener("click"
   flashCopied(e.currentTarget);
 });
 
+// ===== Autenticação 1:1 (módulo de carteiras) =====
+async function loadIssuerStatus() {
+  const el = document.getElementById("inst-issuer-status");
+  if (!el) return;
+  if (!walletAuth) { el.textContent = ""; return; }
+  try {
+    const res = await fetch(`${WALLET_API}/chain/authorized-issuers`);
+    const issuers = await res.json();
+    const mine = (issuers || []).some((i) => walletAuth.wallet && i.address.toLowerCase() === walletAuth.wallet.address.toLowerCase());
+    el.textContent = mine
+      ? "✓ Esta instituição está AUTORIZADA pelo admin para emitir on-chain."
+      : "✗ Esta instituição NÃO está autorizada — peça autorização ao admin (módulo de carteiras).";
+  } catch {
+    el.textContent = "";
+  }
+}
+
+document.getElementById("inst-wallet-login").addEventListener("submit", (e) => { e.preventDefault(); walletLogin("inst"); });
+document.getElementById("stu-wallet-login").addEventListener("submit", (e) => { e.preventDefault(); walletLogin("stu"); });
+document.getElementById("inst-wallet-logout").addEventListener("click", walletLogout);
+document.getElementById("stu-wallet-logout").addEventListener("click", walletLogout);
+document.getElementById("issue-consent-cert-form").addEventListener("submit", issueConsentCert);
+
 updateWalletInfo();
+renderAuthStatus();
 log("Conectado à rede Besu local via " + RPC_URL, "info");
 
 loadFromChain().then(async () => {
@@ -810,7 +1155,9 @@ loadFromChain().then(async () => {
   renderSkillSelect();
   renderInstCertTypes();
   renderRevokeCertSelect();
+  renderConsentIssueCertSelect();
   await loadThreshold();
   refreshClaimedCerts();
+  await loadIssuerStatus();
   log(`Estado carregado: ${knownSkills.size} skill(s), ${knownCertTypes.size} certificado(s), threshold=${currentThreshold}`, "info");
 });

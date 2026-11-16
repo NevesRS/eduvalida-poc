@@ -1,0 +1,49 @@
+name: EduValida POC — ERC-1155 vs ERC-6909
+description: Comparação de performance entre padrões de multi-token para micro-credentials
+
+suts:
+  - name: ERC-1155
+    contract: SkillTokenV1
+  - name: ERC-6909
+    contract: SkillToken
+
+rounds:
+  - label: issueSkill
+    description: Instituição emite skill para aluno
+    txNumber: 50
+    rateControl:
+      type: fixed-rate
+      opts:
+        tps: 10
+    workload:
+      module: workloads/issueSkill.js
+
+  - label: revoke
+    description: Instituição revoga skill emitida
+    txNumber: 50
+    rateControl:
+      type: fixed-rate
+      opts:
+        tps: 10
+    workload:
+      module: workloads/revoke.js
+
+  - label: throughput
+    description: Throughput máximo (issueSkill em paralelo)
+    txDuration: 5
+    rateControl:
+      type: maximum-rate
+      opts:
+        maxTps: 500
+    workload:
+      module: workloads/issueSkill.js
+
+  - label: viewCalls
+    description: Leitura de hasSkill (view, sem gas)
+    txNumber: 100
+    rateControl:
+      type: fixed-rate
+      opts:
+        tps: 50
+    workload:
+      module: workloads/hasSkill.js

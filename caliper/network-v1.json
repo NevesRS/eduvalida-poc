@@ -1,0 +1,33 @@
+{
+  "caliper": {
+    "blockchain": "ethereum"
+  },
+  "ethereum": {
+    "url": "ws://localhost:8546",
+    "chainId": 1337,
+    "gasPrice": 0,
+    "contractDeployerAddress": "0xFE3B557E8Fb62b89F4916B721be55cEb828dBd73",
+    "contractDeployerAddressPrivateKey": "0x8f2a55949038a9610f50fb23b5883af3b4ecb3c3bb792cbcefbd1542c692be63",
+    "fromAddress": "0xFE3B557E8Fb62b89F4916B721be55cEb828dBd73",
+    "fromAddressPrivateKey": "0x8f2a55949038a9610f50fb23b5883af3b4ecb3c3bb792cbcefbd1542c692be63",
+    "transactionConfirmationBlocks": 1,
+    "contracts": {
+      "SkillTokenV1": {
+        "path": "caliper/contracts/SkillTokenV1.json",
+        "gas": {
+          "issueSkill": 160000,
+          "createSkill": 250000,
+          "revoke": 130000,
+          "setIssuer": 120000,
+          "setSkillThreshold": 60000,
+          "setSkillName": 100000,
+          "setSkillBadgeURI": 120000,
+          "hasSkill": 50000,
+          "skillAttestationCount": 50000,
+          "hasSkillFrom": 50000
+        },
+        "estimateGas": false
+      }
+    }
+  }
+}
